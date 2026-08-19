@@ -69,11 +69,6 @@ def estoque_page():
 def faturamento_page():
     return render_template("faturamento.html")
 
-@app.route("/dashboard")
-def dashboard_page():
-    return render_template("dashboard.html")
-
-
 # -------------------
 # Util: gerar SKU simples
 # -------------------
@@ -159,14 +154,6 @@ def logout():
 # -------------------
 # Teste DB
 # -------------------
-@app.route("/teste_db")
-def teste_db():
-    try:
-        db.session.execute("SELECT 1")
-        return "✅ Conectado ao banco!"
-    except Exception as e:
-        return f"❌ Erro ao conectar: {e}"
-
 
 # -------------------
 # Endpoints CRUD, Estoque, Pedidos e Atividades (Mantidos)
@@ -595,24 +582,10 @@ def excluir_pedido(id):
         db.session.rollback()
         return jsonify({"status": "erro", "mensagem": str(e)}), 500
 
-@app.route("/admin/limpar_todas_vendas")
-def limpar_todas_vendas():
-    try:
-        num_itens = db.session.query(ItemPedido).delete()
-        num_pedidos = db.session.query(Pedido).delete()
-        db.session.commit()
-        
-        return jsonify({
-            "status": "ok", 
-            "mensagem": f"Limpeza concluída! {num_pedidos} pedidos e {num_itens} itens foram apagados."
-        })
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"status": "erro", "mensagem": str(e)}), 500
-
 
 # -------------------
 # Run
 # -------------------
 if __name__ == "__main__":
-    app.run(debug=True)
+    debug_ativo = os.getenv("FLASK_DEBUG", "false").lower() == "true"
+    app.run(debug=debug_ativo)
