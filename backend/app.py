@@ -7,18 +7,23 @@ from models import (
     registrar_entrada_variante, registrar_saida_variante
 )
 import os
+from dotenv import load_dotenv
 import re
 from datetime import datetime
 
 # Diretórios
 BASE_DIR = os.path.dirname(__file__)
+load_dotenv(os.path.join(BASE_DIR, "..", ".env"))
 TEMPLATE_DIR = os.path.join(BASE_DIR, "../frontend")
 
 app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=TEMPLATE_DIR)
 init_app(app)
 
 # 🔴 NOVO: CHAVE SECRETA OBRIGATÓRIA PARA SESSÕES
-app.secret_key = "a_chave_secreta_segura_para_mev_glass"
+app.secret_key = os.getenv("FLASK_SECRET_KEY")
+
+if not app.secret_key:
+    raise RuntimeError("FLASK_SECRET_KEY não encontrada no arquivo .env")
 
 # -------------------
 # Páginas (com verificação de login no /inicio)
