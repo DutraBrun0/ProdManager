@@ -42,6 +42,28 @@ def api_login_required(funcao):
 
     return protegida
 
+def api_roles_required(*perfis_permitidos):
+    def decorator(funcao):
+        @wraps(funcao)
+        def protegida(*args, **kwargs):
+            if "user_id" not in session:
+                return jsonify(
+                    status="erro",
+                    mensagem="Autenticação necessária"
+                ), 401
+
+            if session.get("user_perfil") not in perfis_permitidos:
+                return jsonify(
+                    status="erro",
+                    mensagem="Você não possui permissão para esta ação"
+                ), 403
+
+            return funcao(*args, **kwargs)
+
+        return protegida
+
+    return decorator
+
 @app.route("/inicio")
 def inicio_page():
     # 🟢 NOVO: Se não estiver logado, redireciona para o login
@@ -153,6 +175,7 @@ def login():
     session['user_id'] = user.id
     session['user_nome'] = user.nome
     session['user_email'] = user.email
+    session['user_perfil'] = user.perfil
 
     # Não precisa retornar o nome no JSON, o Flask Session cuida do estado
     return jsonify(status="ok", mensagem="Login realizado com sucesso")
@@ -518,6 +541,7 @@ def listar_pedidos():
 
 @app.route("/variante/excluir/<int:id>", methods=["DELETE"])
 @api_login_required
+@api_roles_required("admin")
 def excluir_variante(id):
     try:
         variante = Variante.query.get(id)
@@ -593,6 +617,7 @@ def api_atividades_recentes():
 
 @app.route("/pedido/excluir/<int:id>", methods=["DELETE"])
 @api_login_required
+@api_roles_required("admin")
 def excluir_pedido(id):
     try:
         pedido = Pedido.query.get(id)
