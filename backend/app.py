@@ -10,6 +10,7 @@ import os
 from dotenv import load_dotenv
 import re
 from datetime import datetime
+from functools import wraps
 
 # Diretórios
 BASE_DIR = os.path.dirname(__file__)
@@ -28,6 +29,19 @@ if not app.secret_key:
 # -------------------
 # Páginas (com verificação de login no /inicio)
 # -------------------
+def api_login_required(funcao):
+    @wraps(funcao)
+    def protegida(*args, **kwargs):
+        if "user_id" not in session:
+            return jsonify(
+                status="erro",
+                mensagem="Autenticação necessária"
+            ), 401
+
+        return funcao(*args, **kwargs)
+
+    return protegida
+
 @app.route("/inicio")
 def inicio_page():
     # 🟢 NOVO: Se não estiver logado, redireciona para o login
@@ -159,6 +173,7 @@ def logout():
 # Endpoints CRUD, Estoque, Pedidos e Atividades (Mantidos)
 # -------------------
 @app.route("/produto/variantes", methods=["POST"])
+@api_login_required
 def criar_produto_com_variantes():
     """
     Cria um novo produto e suas variantes.
@@ -239,6 +254,7 @@ def criar_produto_com_variantes():
 
 
 @app.route("/produto/catalogo", methods=["GET"])
+@api_login_required
 def listar_catalogo():
     """ Retorna todas as variantes ativas com dados do produto e estoque. """
     q = db.session.query(Produto, Variante, Estoque) \
@@ -267,6 +283,7 @@ def listar_catalogo():
 
 
 @app.route("/estoque/variantes", methods=["GET"])
+@api_login_required
 def listar_variantes_estoque():
     variantes = Variante.query.filter_by(ativo=True).all()
     resp = []
@@ -289,6 +306,7 @@ def listar_variantes_estoque():
     return jsonify(resp)
 
 @app.route("/estoque/entrada_sku", methods=["POST"])
+@api_login_required
 def entrada_sku():
     """ Payload: { "variante_id": 1, "quantidade": 5, "usuario_id": 1, "motivo": "compra" } """
     data = request.get_json()
@@ -308,6 +326,7 @@ def entrada_sku():
 
 
 @app.route("/estoque/saida_sku", methods=["POST"])
+@api_login_required
 def saida_sku():
     """ Payload: { "variante_id": 1, "quantidade": 2, "usuario_id": 1, "motivo": "venda" } """
     data = request.get_json()
@@ -329,6 +348,7 @@ def saida_sku():
 
 
 @app.route("/estoque/entrada", methods=["POST"])
+@api_login_required
 def entrada_estoque_compat():
     """ Endpoint legado: tenta localizar variante pelo produto e incrementar estoque da primeira variante. """
     data = request.get_json()
@@ -351,6 +371,7 @@ def entrada_estoque_compat():
 
 
 @app.route("/pedido/confirmar", methods=["POST"])
+@api_login_required
 def confirmar_pedido():
     data = request.get_json()
     item_id = data.get("item_pedido_id")
@@ -371,6 +392,7 @@ def confirmar_pedido():
 
 
 @app.route('/api/clientes', methods=['GET'])
+@api_login_required
 def api_clientes():
     clientes = Usuario.query.all()
     return jsonify([
@@ -384,6 +406,7 @@ def api_clientes():
 
 
 @app.route('/pedido/criar', methods=['POST'])
+@api_login_required
 def criar_pedido():
     data = request.get_json()
 
@@ -465,6 +488,7 @@ def criar_pedido():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/pedido/listar', methods=['GET'])
+@api_login_required
 def listar_pedidos():
     """ Lista pedidos com itens e informações das variantes. """
     pedidos = Pedido.query.order_by(Pedido.created_at.desc()).limit(100).all()
@@ -493,6 +517,7 @@ def listar_pedidos():
     return jsonify(resultado)
 
 @app.route("/variante/excluir/<int:id>", methods=["DELETE"])
+@api_login_required
 def excluir_variante(id):
     try:
         variante = Variante.query.get(id)
@@ -513,6 +538,7 @@ def excluir_variante(id):
         
 
 @app.route("/api/atividades_recentes")
+@api_login_required
 def api_atividades_recentes():
     atividades = []
 
@@ -566,6 +592,7 @@ def api_atividades_recentes():
 
 
 @app.route("/pedido/excluir/<int:id>", methods=["DELETE"])
+@api_login_required
 def excluir_pedido(id):
     try:
         pedido = Pedido.query.get(id)
