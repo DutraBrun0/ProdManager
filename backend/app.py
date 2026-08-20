@@ -29,6 +29,32 @@ if not app.secret_key:
 # -------------------
 # Páginas (com verificação de login no /inicio)
 # -------------------
+def page_login_required(funcao):
+    @wraps(funcao)
+    def protegida(*args, **kwargs):
+        if "user_id" not in session:
+            return redirect(url_for("index"))
+
+        return funcao(*args, **kwargs)
+
+    return protegida
+
+def page_roles_required(*perfis_permitidos):
+    def decorator(funcao):
+        @wraps(funcao)
+        def protegida(*args, **kwargs):
+            if "user_id" not in session:
+                return redirect(url_for("index"))
+
+            if session.get("user_perfil") not in perfis_permitidos:
+                return "Acesso negado: você não possui permissão.", 403
+
+            return funcao(*args, **kwargs)
+
+        return protegida
+
+    return decorator
+
 def api_login_required(funcao):
     @wraps(funcao)
     def protegida(*args, **kwargs):
@@ -65,11 +91,8 @@ def api_roles_required(*perfis_permitidos):
     return decorator
 
 @app.route("/inicio")
-def inicio_page():
-    # 🟢 NOVO: Se não estiver logado, redireciona para o login
-    if 'user_id' not in session:
-        return redirect(url_for('index'))
-    
+@page_login_required
+def inicio_page():    
     # Envia o nome do usuário logado para o template
     return render_template("inicio.html", nome_usuario=session.get('user_nome'))
 
@@ -81,27 +104,34 @@ def index():
     return render_template("login.html")
 
 @app.route("/register_page")
+@page_login_required
+@page_roles_required("admin")
 def register_page():
     return render_template("criar_conta.html")
 
 # Rotas que não mudam (mantidas por segurança)
 @app.route("/produtos")
+@page_login_required
 def produtos_page():
     return render_template("produtos.html")
 
 @app.route("/clientes")
+@page_login_required
 def clientes_page():
     return render_template("clientes.html")
 
 @app.route("/lista_cliente")
+@page_login_required
 def lista_cliente_page():
     return render_template("lista_clientes.html")
 
 @app.route("/estoque")
+@page_login_required
 def estoque_page():
     return render_template("estoque.html")
 
 @app.route("/faturamento")
+@page_login_required
 def faturamento_page():
     return render_template("faturamento.html")
 
@@ -128,6 +158,8 @@ def gerar_sku_from_fields(produto_linha: str, altura=None, largura=None, cor=Non
 # -------------------
 
 @app.route("/register", methods=["POST"])
+@api_login_required
+@api_roles_required("admin")
 def register():
     data = request.get_json()
     nome = data.get("nome")
@@ -182,6 +214,7 @@ def login():
 
 
 @app.route("/logout")
+@page_login_required
 def logout():
     # 🟢 NOVO: Limpa a sessão e redireciona para o login
     session.clear()
