@@ -234,6 +234,7 @@ def logout():
 # -------------------
 @app.route("/produto/variantes", methods=["POST"])
 @api_login_required
+@api_roles_required("admin")
 def criar_produto_com_variantes():
     """
     Cria um novo produto e suas variantes.
@@ -344,6 +345,7 @@ def listar_catalogo():
 
 @app.route("/estoque/variantes", methods=["GET"])
 @api_login_required
+@api_roles_required("admin")
 def listar_variantes_estoque():
     variantes = Variante.query.filter_by(ativo=True).all()
     resp = []
@@ -367,6 +369,7 @@ def listar_variantes_estoque():
 
 @app.route("/estoque/entrada_sku", methods=["POST"])
 @api_login_required
+@api_roles_required("admin")
 def entrada_sku():
     """ Payload: { "variante_id": 1, "quantidade": 5, "usuario_id": 1, "motivo": "compra" } """
     data = request.get_json()
@@ -387,6 +390,7 @@ def entrada_sku():
 
 @app.route("/estoque/saida_sku", methods=["POST"])
 @api_login_required
+@api_roles_required("admin")
 def saida_sku():
     """ Payload: { "variante_id": 1, "quantidade": 2, "usuario_id": 1, "motivo": "venda" } """
     data = request.get_json()
@@ -409,6 +413,7 @@ def saida_sku():
 
 @app.route("/estoque/entrada", methods=["POST"])
 @api_login_required
+@api_roles_required("admin")
 def entrada_estoque_compat():
     """ Endpoint legado: tenta localizar variante pelo produto e incrementar estoque da primeira variante. """
     data = request.get_json()
@@ -432,6 +437,7 @@ def entrada_estoque_compat():
 
 @app.route("/pedido/confirmar", methods=["POST"])
 @api_login_required
+@api_roles_required("admin")
 def confirmar_pedido():
     data = request.get_json()
     item_id = data.get("item_pedido_id")
@@ -453,6 +459,7 @@ def confirmar_pedido():
 
 @app.route('/api/clientes', methods=['GET'])
 @api_login_required
+@api_roles_required("admin")
 def api_clientes():
     clientes = Usuario.query.all()
     return jsonify([
@@ -467,6 +474,7 @@ def api_clientes():
 
 @app.route('/pedido/criar', methods=['POST'])
 @api_login_required
+@api_roles_required("admin")
 def criar_pedido():
     data = request.get_json()
 
@@ -549,6 +557,7 @@ def criar_pedido():
 
 @app.route('/pedido/listar', methods=['GET'])
 @api_login_required
+@api_roles_required("admin")
 def listar_pedidos():
     """ Lista pedidos com itens e informações das variantes. """
     pedidos = Pedido.query.order_by(Pedido.created_at.desc()).limit(100).all()
@@ -600,6 +609,7 @@ def excluir_variante(id):
 
 @app.route("/api/atividades_recentes")
 @api_login_required
+@api_roles_required("admin")
 def api_atividades_recentes():
     atividades = []
 
