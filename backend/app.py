@@ -117,21 +117,25 @@ def produtos_page():
 
 @app.route("/clientes")
 @page_login_required
+@page_roles_required("admin")
 def clientes_page():
     return render_template("clientes.html")
 
 @app.route("/lista_cliente")
 @page_login_required
+@page_roles_required("admin")
 def lista_cliente_page():
     return render_template("lista_clientes.html")
 
 @app.route("/estoque")
 @page_login_required
+@page_roles_required("admin")
 def estoque_page():
     return render_template("estoque.html")
 
 @app.route("/faturamento")
 @page_login_required
+@page_roles_required("admin")
 def faturamento_page():
     return render_template("faturamento.html")
 
