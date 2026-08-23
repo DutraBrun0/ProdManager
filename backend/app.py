@@ -450,14 +450,14 @@ def api_clientes():
     ])
 
 
-@app.route('/pedido/criar', methods=['POST'])
+@app.route("/pedido/criar", methods=["POST"])
 @api_login_required
 @api_roles_required("admin")
 def criar_pedido():
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
 
     cliente_nome = data.get("cliente_nome")
-    
+
     if not cliente_nome and data.get("cliente_id"):
         cliente_nome = f"Cliente ID {data.get('cliente_id')}"
 
@@ -465,6 +465,7 @@ def criar_pedido():
 
     if not cliente_nome:
         return jsonify({"error": "Nome do cliente é obrigatório"}), 400
+
     if not itens:
         return jsonify({"error": "Nenhum item no pedido"}), 400
 
@@ -472,7 +473,7 @@ def criar_pedido():
 
     try:
         pedido = Pedido(
-            cliente_nome=cliente_nome, 
+            cliente_nome=cliente_nome,
             cliente_contato=None,
             status="criado",
             total=0,
@@ -487,27 +488,50 @@ def criar_pedido():
         for item in itens:
             variante_id = item.get("variante_id")
             quantidade = item.get("quantidade")
-            preco_unit = item.get("preco_unit")
 
-            if not variante_id or not quantidade:
+            try:
+                quantidade = int(quantidade)
+            except (TypeError, ValueError):
                 db.session.rollback()
-                return jsonify({"error": "Dados do item incompletos"}), 400
+                return jsonify({"error": "Quantidade inválida"}), 400
 
-            quantidade = int(quantidade)
-            preco_unit = float(preco_unit)
+            if not variante_id or quantidade <= 0:
+                db.session.rollback()
+                return jsonify({"error": "Dados do item inválidos"}), 400
 
-            estoque_registro = Estoque.query.filter_by(variante_id=variante_id).first()
-            
+            variante = Variante.query.filter_by(
+                id=variante_id,
+                ativo=True
+            ).first()
+
+            if not variante:
+                db.session.rollback()
+                return jsonify({
+                    "error": "Produto ou variante não encontrada"
+                }), 404
+
+            preco_unit = variante.preco_base
+
+            estoque_registro = Estoque.query.filter_by(
+                variante_id=variante_id
+            ).first()
+
             if not estoque_registro:
                 db.session.rollback()
-                return jsonify({"error": f"Estoque não encontrado para o item {variante_id}"}), 400
+                return jsonify({
+                    "error": f"Estoque não encontrado para o item {variante_id}"
+                }), 400
 
             if estoque_registro.quantidade < quantidade:
                 db.session.rollback()
-                return jsonify({"error": f"Estoque insuficiente. Disponível: {estoque_registro.quantidade}"}), 400
+                return jsonify({
+                    "error": (
+                        "Estoque insuficiente. "
+                        f"Disponível: {estoque_registro.quantidade}"
+                    )
+                }), 400
 
             estoque_registro.quantidade -= quantidade
-            db.session.add(estoque_registro)
 
             item_pedido = ItemPedido(
                 pedido_id=pedido.id,
@@ -516,8 +540,8 @@ def criar_pedido():
                 preco_unit=preco_unit,
                 valor_total=preco_unit * quantidade
             )
-            db.session.add(item_pedido)
 
+            db.session.add(item_pedido)
             total_geral += preco_unit * quantidade
 
         pedido.total = total_geral
@@ -526,7 +550,7 @@ def criar_pedido():
         return jsonify({
             "status": "ok",
             "pedido_id": pedido.id,
-            "total": total_geral
+            "total": float(total_geral)
         })
 
     except Exception as e:
