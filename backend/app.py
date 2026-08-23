@@ -435,28 +435,6 @@ def entrada_estoque_compat():
         return jsonify({"status": "erro", "mensagem": str(e)}), 400
 
 
-@app.route("/pedido/confirmar", methods=["POST"])
-@api_login_required
-@api_roles_required("admin")
-def confirmar_pedido():
-    data = request.get_json()
-    item_id = data.get("item_pedido_id")
-    usuario_id = data.get("usuario_id")
-
-    if not item_id:
-        return jsonify({"status": "erro", "mensagem": "item_pedido_id required"}), 400
-
-    item = ItemPedido.query.get(item_id)
-    if not item:
-        return jsonify({"status": "erro", "mensagem": "Item não encontrado"}), 404
-
-    try:
-        novo = registrar_saida_variante(variante_id=item.variante_id, quantidade=int(item.quantidade), usuario_id=usuario_id, motivo="Saída por confirmação de pedido")
-        return jsonify({"status": "ok", "estoque_atual": novo})
-    except Exception as e:
-        return jsonify({"status": "erro", "mensagem": str(e)}), 400
-
-
 @app.route('/api/clientes', methods=['GET'])
 @api_login_required
 @api_roles_required("admin")
@@ -490,7 +468,7 @@ def criar_pedido():
     if not itens:
         return jsonify({"error": "Nenhum item no pedido"}), 400
 
-    usuario_responsavel = 1 
+    usuario_responsavel = session["user_id"]
 
     try:
         pedido = Pedido(
