@@ -371,11 +371,11 @@ def listar_variantes_estoque():
 @api_login_required
 @api_roles_required("admin")
 def entrada_sku():
-    """ Payload: { "variante_id": 1, "quantidade": 5, "usuario_id": 1, "motivo": "compra" } """
+    """Payload: {"variante_id": 1, "quantidade": 5, "motivo": "compra"}"""
     data = request.get_json()
     variante_id = data.get("variante_id")
     quantidade = int(data.get("quantidade", 0))
-    usuario_id = data.get("usuario_id")
+    usuario_id = session["user_id"]
     motivo = data.get("motivo", "Entrada manual")
 
     if not variante_id or quantidade <= 0:
@@ -392,11 +392,11 @@ def entrada_sku():
 @api_login_required
 @api_roles_required("admin")
 def saida_sku():
-    """ Payload: { "variante_id": 1, "quantidade": 2, "usuario_id": 1, "motivo": "venda" } """
+    """Payload: {"variante_id": 1, "quantidade": 2, "motivo": "venda"}"""
     data = request.get_json()
     variante_id = data.get("variante_id")
     quantidade = int(data.get("quantidade", 0))
-    usuario_id = data.get("usuario_id")
+    usuario_id = session["user_id"]
     motivo = data.get("motivo", "Saída por pedido")
 
     if not variante_id or quantidade <= 0:
@@ -419,7 +419,7 @@ def entrada_estoque_compat():
     data = request.get_json()
     produto_id = data.get("produto_id")
     quantidade = int(data.get("quantidade", 0))
-    usuario_id = data.get("usuario_id")
+    usuario_id = session["user_id"]
 
     if not produto_id or quantidade <= 0:
         return jsonify({"status": "erro", "mensagem": "produto_id and quantidade>0 required"}), 400
