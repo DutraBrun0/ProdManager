@@ -571,26 +571,12 @@ def criar_pedido():
 
             preco_unit = variante.preco_base
 
-            estoque_registro = Estoque.query.filter_by(
-                variante_id=variante_id
-            ).first()
-
-            if not estoque_registro:
-                db.session.rollback()
-                return jsonify({
-                    "error": f"Estoque não encontrado para o item {variante_id}"
-                }), 400
-
-            if estoque_registro.quantidade < quantidade:
-                db.session.rollback()
-                return jsonify({
-                    "error": (
-                        "Estoque insuficiente. "
-                        f"Disponível: {estoque_registro.quantidade}"
-                    )
-                }), 400
-
-            estoque_registro.quantidade -= quantidade
+            registrar_saida_variante(
+    variante_id=variante_id,
+    quantidade=quantidade,
+    usuario_id=usuario_responsavel,
+    motivo=f"Venda do pedido #{pedido.id}"
+)
 
             item_pedido = ItemPedido(
                 pedido_id=pedido.id,
@@ -611,10 +597,19 @@ def criar_pedido():
             "pedido_id": pedido.id,
             "total": float(total_geral)
         })
+    except ValueError as e:
+        db.session.rollback()
+
+        return jsonify({
+            "error": str(e)
+        }), 400
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": str(e)}), 500
+
+        return jsonify({
+            "error": str(e)
+            }), 500
 
 @app.route('/pedido/listar', methods=['GET'])
 @api_login_required
