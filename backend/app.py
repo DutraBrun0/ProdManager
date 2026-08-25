@@ -371,44 +371,103 @@ def listar_variantes_estoque():
 @api_login_required
 @api_roles_required("admin")
 def entrada_sku():
-    """Payload: {"variante_id": 1, "quantidade": 5, "motivo": "compra"}"""
-    data = request.get_json()
-    variante_id = data.get("variante_id")
-    quantidade = int(data.get("quantidade", 0))
-    usuario_id = session["user_id"]
-    motivo = data.get("motivo", "Entrada manual")
+    data = request.get_json(silent=True) or {}
 
-    if not variante_id or quantidade <= 0:
-        return jsonify({"error": "variante_id and quantidade>0 required"}), 400
+    variante_id = data.get("variante_id")
+    usuario_id = session["user_id"]
+    motivo = data.get("motivo") or "Entrada manual"
 
     try:
-        novo = registrar_entrada_variante(variante_id=variante_id, quantidade=quantidade, usuario_id=usuario_id, motivo=motivo)
-        return jsonify({"status": "ok", "estoque_atual": novo})
-    except Exception as e:
-        return jsonify({"status": "erro", "mensagem": str(e)}), 400
+        quantidade = int(data.get("quantidade", 0))
+    except (TypeError, ValueError):
+        return jsonify({
+            "status": "erro",
+            "mensagem": "Quantidade inválida"
+        }), 400
 
+    if not variante_id or quantidade <= 0:
+        return jsonify({
+            "status": "erro",
+            "mensagem": "Informe a variante e uma quantidade maior que zero"
+        }), 400
+
+    try:
+        novo = registrar_entrada_variante(
+            variante_id=variante_id,
+            quantidade=quantidade,
+            usuario_id=usuario_id,
+            motivo=motivo
+        )
+
+        db.session.commit()
+
+        return jsonify({
+            "status": "ok",
+            "estoque_atual": novo
+        })
+
+    except Exception as e:
+        db.session.rollback()
+
+        return jsonify({
+            "status": "erro",
+            "mensagem": str(e)
+        }), 400
 
 @app.route("/estoque/saida_sku", methods=["POST"])
 @api_login_required
 @api_roles_required("admin")
 def saida_sku():
-    """Payload: {"variante_id": 1, "quantidade": 2, "motivo": "venda"}"""
-    data = request.get_json()
-    variante_id = data.get("variante_id")
-    quantidade = int(data.get("quantidade", 0))
-    usuario_id = session["user_id"]
-    motivo = data.get("motivo", "Saída por pedido")
+    data = request.get_json(silent=True) or {}
 
-    if not variante_id or quantidade <= 0:
-        return jsonify({"error": "variante_id and quantidade>0 required"}), 400
+    variante_id = data.get("variante_id")
+    usuario_id = session["user_id"]
+    motivo = data.get("motivo") or "Saída manual"
 
     try:
-        novo = registrar_saida_variante(variante_id=variante_id, quantidade=quantidade, usuario_id=usuario_id, motivo=motivo)
-        return jsonify({"status": "ok", "estoque_atual": novo})
-    except ValueError as ve:
-        return jsonify({"status": "erro", "mensagem": str(ve)}), 400
+        quantidade = int(data.get("quantidade", 0))
+    except (TypeError, ValueError):
+        return jsonify({
+            "status": "erro",
+            "mensagem": "Quantidade inválida"
+        }), 400
+
+    if not variante_id or quantidade <= 0:
+        return jsonify({
+            "status": "erro",
+            "mensagem": "Informe a variante e uma quantidade maior que zero"
+        }), 400
+
+    try:
+        novo = registrar_saida_variante(
+            variante_id=variante_id,
+            quantidade=quantidade,
+            usuario_id=usuario_id,
+            motivo=motivo
+        )
+
+        db.session.commit()
+
+        return jsonify({
+            "status": "ok",
+            "estoque_atual": novo
+        })
+
+    except ValueError as e:
+        db.session.rollback()
+
+        return jsonify({
+            "status": "erro",
+            "mensagem": str(e)
+        }), 400
+
     except Exception as e:
-        return jsonify({"status": "erro", "mensagem": str(e)}), 500
+        db.session.rollback()
+
+        return jsonify({
+            "status": "erro",
+            "mensagem": str(e)
+        }), 500
 
 
 @app.route("/estoque/entrada", methods=["POST"])

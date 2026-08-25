@@ -50,11 +50,13 @@
         border-radius: 16px;
         box-shadow: var(--shadow-md);
         border: 1px solid var(--border-subtle);
+        display: block !important;
     }
 
-    .page-header { margin-bottom: 30px; }
-    h2 { font-weight: 600; color: var(--primary); margin: 0 0 5px 0; font-size: 1.5rem; }
-    .subtitle { color: var(--text-muted); font-size: 0.9rem; display: flex; align-items: center; gap: 5px; }
+   .page-header {
+    margin-bottom: 20px;
+    display: block !important;
+}
 
     /* --- BLOCO DA TABELA (O "Bloco Dentro") --- */
     .table-container {
@@ -126,6 +128,122 @@
         color: var(--blue-btn); /* Azul do tema */
     }
 
+.barra-estoque {
+    display: block;
+    width: 100%;
+    margin-bottom: 14px;;
+}
+
+.btn-movimentacao {
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 5px 9px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.btn-movimentacao:hover {
+    color: var(--primary);
+    background-color: #f1f5f9;
+}
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background-color: rgba(15, 23, 42, 0.55);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 1000;
+}
+
+.modal-overlay.ativo {
+    display: flex;
+}
+
+.modal-conteudo {
+    background-color: white;
+    width: 100%;
+    max-width: 430px;
+    padding: 28px;
+    border-radius: 14px;
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.25);
+}
+
+.modal-conteudo h3 {
+    margin: 0 0 20px;
+    color: var(--primary);
+}
+
+.campo-modal {
+    margin-bottom: 16px;
+}
+
+.campo-modal label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.campo-modal input,
+.campo-modal select {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    font: inherit;
+    box-sizing: border-box;
+}
+
+.modal-acoes {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 22px;
+}
+
+.btn-cancelar,
+.btn-confirmar {
+    border: none;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-cancelar {
+    background-color: #e2e8f0;
+    color: var(--text-main);
+}
+
+.btn-confirmar {
+    background-color: var(--primary);
+    color: white;
+}
+
+.mensagem-modal {
+    display: none;
+    margin: 12px 0 0;
+    padding: 9px 11px;
+    border-radius: 7px;
+    font-size: 0.85rem;
+}
+
+.mensagem-modal.erro {
+    display: block;
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.mensagem-modal.sucesso {
+    display: block;
+    background-color: #dcfce7;
+    color: #166534;
+}
 </style>
 </head>
 
@@ -142,13 +260,23 @@
 </header>
 
 <main>
-    <div class="card">
-        <div class="page-header">
-            <h2>Controle de Estoque</h2>
-            <span class="subtitle">
-        
-            </span>
-        </div>
+<div class="card">
+
+<div class="page-header">
+    <h2>Controle de Estoque</h2>
+    <span class="subtitle">
+        Acompanhe as quantidades e registre movimentações.
+    </span>
+</div>
+
+<div class="barra-estoque">
+    <button
+        type="button"
+        class="btn-movimentacao"
+        onclick="abrirMovimentacao()">
+        + Movimentar
+    </button>
+</div>
 
         <div class="table-container">
             <table>
@@ -169,6 +297,65 @@
     </div>
 </main>
 
+<div id="modal-movimentacao" class="modal-overlay">
+    <div class="modal-conteudo">
+        <h3>Registrar movimentação</h3>
+
+        <form id="form-movimentacao">
+            <div class="campo-modal">
+                <label for="movimento-produto">Produto / Variante</label>
+                <select id="movimento-produto" required>
+                    <option value="">Selecione um produto</option>
+                </select>
+            </div>
+
+            <div class="campo-modal">
+                <label for="movimento-tipo">Tipo</label>
+                <select id="movimento-tipo" required>
+                    <option value="entrada">Entrada</option>
+                    <option value="saida">Saída</option>
+                </select>
+            </div>
+
+            <div class="campo-modal">
+                <label for="movimento-quantidade">Quantidade</label>
+                <input
+                    id="movimento-quantidade"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value="1"
+                    required>
+            </div>
+
+            <div class="campo-modal">
+                <label for="movimento-motivo">Motivo</label>
+                <input
+                    id="movimento-motivo"
+                    type="text"
+                    maxlength="120"
+                    placeholder="Ex.: reposição de mercadoria"
+                    required>
+            </div>
+
+            <p id="mensagem-movimentacao" class="mensagem-modal"></p>
+
+            <div class="modal-acoes">
+                <button
+                    type="button"
+                    class="btn-cancelar"
+                    onclick="fecharMovimentacao()">
+                    Cancelar
+                </button>
+
+                <button type="submit" class="btn-confirmar">
+                    Confirmar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 async function carregarEstoque() {
   try {
@@ -178,30 +365,32 @@ async function carregarEstoque() {
     const tbody = document.getElementById("tabela-estoque");
     tbody.innerHTML = "";
 
+    const selectProduto = document.getElementById("movimento-produto");
+
+    selectProduto.innerHTML = `
+        <option value="">Selecione um produto</option>
+`;
+
     data.forEach(v => {
       const tr = document.createElement("tr");
       
-      // Configurações da linha para exclusão
-      tr.dataset.id = v.variante_id;
-      tr.title = "Clique duas vezes para excluir este item";
+tr.innerHTML = `
+    <td><span class="sku-tag">${v.sku}</span></td>
+    <td>${v.nome_produto || v.produto_id}</td>
+    <td>${v.altura_cm || ""} x ${v.largura_cm || ""}</td>
+    <td>${v.cor || ""} / ${v.moldura || ""}</td>
+    <td>R$ ${v.preco_base}</td>
+    <td id="qtd-${v.variante_id}" class="qtd-destaque">${v.estoque}</td>
+`;
 
-      // Preenche as células
-      tr.innerHTML = `
-        <td><span class="sku-tag">${v.sku}</span></td>
-        <td>${v.nome_produto || v.produto_id}</td>
-        <td>${v.altura_cm || ""} x ${v.largura_cm || ""}</td>
-        <td>${v.cor || ""} / ${v.moldura || ""}</td>
-        <td>R$ ${v.preco_base}</td>
-        <td id="qtd-${v.variante_id}" class="qtd-destaque">${v.estoque}</td>
-      `;
+const option = document.createElement("option");
+
+option.value = v.variante_id;
+option.textContent =
+    `${v.sku} - ${v.nome_produto} (Estoque: ${v.estoque})`;
+
+selectProduto.appendChild(option);
       
-      // Adiciona o evento de CLIQUE DUPLO para excluir
-      tr.addEventListener("dblclick", function() {
-         if (confirm(`Tem certeza que deseja EXCLUIR o produto SKU: ${v.sku}?`)) {
-             excluirProduto(v.variante_id, tr);
-         }
-      });
-
       tbody.appendChild(tr);
     });
   } catch (error) {
@@ -209,30 +398,115 @@ async function carregarEstoque() {
   }
 }
 
-// Nova função para excluir (Desativar) o produto
-async function excluirProduto(id, linhaElemento) {
-  try {
-    const req = await fetch(`/variante/excluir/${id}`, {
-      method: "DELETE"
-    });
-    
-    const res = await req.json();
+function abrirMovimentacao() {
+    const modal = document.getElementById("modal-movimentacao");
 
-    if (res.status === "ok") {
-      // Efeito visual antes de remover
-      linhaElemento.style.backgroundColor = "#fee2e2";
-      setTimeout(() => {
-          linhaElemento.remove();
-          alert("Produto excluído com sucesso!");
-      }, 200);
-    } else {
-      alert("Erro ao excluir: " + res.mensagem);
-    }
-  } catch (error) {
-    alert("Erro de conexão com o servidor.");
-    console.error(error);
-  }
+    document.getElementById("movimento-produto").value = "";
+    document.getElementById("movimento-tipo").value = "entrada";
+    document.getElementById("movimento-quantidade").value = 1;
+    document.getElementById("movimento-motivo").value = "";
+
+    modal.classList.add("ativo");
 }
+
+function fecharMovimentacao() {
+    const modal = document.getElementById("modal-movimentacao");
+    modal.classList.remove("ativo");
+}
+
+document
+    .getElementById("form-movimentacao")
+    .addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        const varianteId = Number(
+            document.getElementById("movimento-produto").value
+        );
+
+        const tipo = document.getElementById("movimento-tipo").value;
+
+        const quantidade = Number(
+            document.getElementById("movimento-quantidade").value
+        );
+
+        const motivo = document
+            .getElementById("movimento-motivo")
+            .value
+            .trim();
+
+        const mensagem = document.getElementById(
+            "mensagem-movimentacao"
+        );
+
+        const botao = this.querySelector(".btn-confirmar");
+
+        mensagem.className = "mensagem-modal";
+        mensagem.textContent = "";
+
+        if (!varianteId) {
+            mensagem.className = "mensagem-modal erro";
+            mensagem.textContent = "Selecione um produto.";
+            return;
+        }
+
+        if (!Number.isInteger(quantidade) || quantidade <= 0) {
+            mensagem.className = "mensagem-modal erro";
+            mensagem.textContent =
+                "Informe uma quantidade inteira maior que zero.";
+            return;
+        }
+
+        if (!motivo) {
+            mensagem.className = "mensagem-modal erro";
+            mensagem.textContent = "Informe o motivo.";
+            return;
+        }
+
+        botao.disabled = true;
+        botao.textContent = "Salvando...";
+
+        try {
+            const req = await fetch(`/estoque/${tipo}_sku`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    variante_id: varianteId,
+                    quantidade: quantidade,
+                    motivo: motivo
+                })
+            });
+
+            const res = await req.json();
+
+            if (!req.ok || res.status !== "ok") {
+                throw new Error(
+                    res.mensagem ||
+                    res.error ||
+                    "Não foi possível movimentar o estoque."
+                );
+            }
+
+            await carregarEstoque();
+
+            mensagem.className = "mensagem-modal sucesso";
+            mensagem.textContent =
+                `Estoque atualizado para ${res.estoque_atual}.`;
+
+            setTimeout(() => {
+                fecharMovimentacao();
+            }, 900);
+
+        } catch (error) {
+            mensagem.className = "mensagem-modal erro";
+            mensagem.textContent = error.message;
+
+        } finally {
+            botao.disabled = false;
+            botao.textContent = "Confirmar";
+        }
+    });
 
 // Inicia o carregamento
 carregarEstoque();
