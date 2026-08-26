@@ -132,8 +132,8 @@ Antes de começar, instale:
 ### 1. Clonar o repositório
 
 ```bash
-git clone https://github.com/DutraBrun0/TCC-1.git
-cd TCC-1
+git clone https://github.com/DutraBrun0/TCC.git
+cd TCC
 ```
 
 ### 2. Criar o ambiente virtual
@@ -307,7 +307,7 @@ O projeto aplica algumas práticas importantes:
 
 ## Próximas melhorias
 
-- Adicionar testes automatizados.
+- Ampliar a cobertura dos testes automatizados.
 - Criar paginação para grandes quantidades de registros.
 - Adicionar recuperação de senha.
 - Publicar uma demonstração online.
