@@ -289,6 +289,11 @@ O projeto aplica algumas práticas importantes:
 - validação de permissões por perfil;
 - transações com rollback em caso de erro;
 - arquivo `.env` ignorado pelo Git.
+- bloqueio de autenticação para usuários inativos;
+- mensagens de login que não revelam qual credencial está errada;
+- cookies de sessão com `HttpOnly` e `SameSite=Lax`;
+- cabeçalhos contra interpretação incorreta de conteúdo e incorporação em frames;
+- suporte a cookies exclusivos para HTTPS em produção.
 
 ## Interface
 

@@ -104,7 +104,7 @@ def test_login_rejeita_senha_incorreta(
 
     assert resposta.status_code == 401
     assert dados["status"] == "erro"
-    assert dados["mensagem"] == "Senha incorreta"
+    assert dados["mensagem"] == "E-mail ou senha inválidos"
 
 
 def test_inicio_redireciona_usuario_sem_login(client):
@@ -115,3 +115,69 @@ def test_inicio_redireciona_usuario_sem_login(client):
 
     assert resposta.status_code == 302
     assert resposta.headers["Location"].endswith("/")
+
+
+def test_login_rejeita_usuario_inativo(
+    client,
+    criar_usuario
+):
+    criar_usuario(
+        email="inativo@teste.com",
+        senha="senha123",
+        ativo=False
+    )
+
+    resposta = client.post(
+        "/login",
+        json={
+            "email": "inativo@teste.com",
+            "senha": "senha123"
+        }
+    )
+
+    dados = resposta.get_json()
+
+    assert resposta.status_code == 401
+    assert dados["status"] == "erro"
+    assert dados["mensagem"] == "E-mail ou senha inválidos"
+
+def test_login_configura_cookie_seguro(
+    client,
+    criar_usuario
+):
+    criar_usuario(
+        email="cookie@teste.com",
+        senha="senha123"
+    )
+
+    resposta = client.post(
+        "/login",
+        json={
+            "email": "cookie@teste.com",
+            "senha": "senha123"
+        }
+    )
+
+    cookie = resposta.headers.get("Set-Cookie")
+
+    assert resposta.status_code == 200
+    assert "HttpOnly" in cookie
+    assert "SameSite=Lax" in cookie
+
+
+def test_resposta_possui_cabecalhos_de_seguranca(
+    client
+):
+    resposta = client.get("/")
+
+    assert (
+        resposta.headers["X-Content-Type-Options"]
+        == "nosniff"
+    )
+
+    assert resposta.headers["X-Frame-Options"] == "DENY"
+
+    assert (
+        resposta.headers["Referrer-Policy"]
+        == "strict-origin-when-cross-origin"
+    )

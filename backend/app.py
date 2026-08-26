@@ -28,6 +28,33 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY")
 if not app.secret_key:
     raise RuntimeError("FLASK_SECRET_KEY não encontrada no arquivo .env")
 
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=(
+        os.getenv(
+            "SESSION_COOKIE_SECURE",
+            "false"
+        ).lower() == "true"
+    )
+)
+
+
+@app.after_request
+def adicionar_cabecalhos_seguranca(resposta):
+    resposta.headers["X-Content-Type-Options"] = "nosniff"
+    resposta.headers["X-Frame-Options"] = "DENY"
+    resposta.headers["Referrer-Policy"] = (
+        "strict-origin-when-cross-origin"
+    )
+
+    if app.config["SESSION_COOKIE_SECURE"]:
+        resposta.headers["Strict-Transport-Security"] = (
+            "max-age=31536000; includeSubDomains"
+        )
+
+    return resposta
+
 # -------------------
 # Páginas (com verificação de login no /inicio)
 # -------------------
@@ -300,29 +327,45 @@ def register():
         ), 500
 @app.route("/login", methods=["POST"])
 def login():
-    data = request.get_json()
-    email = data.get("email")
-    senha = data.get("senha")
+    data = request.get_json(silent=True) or {}
+
+    email = (data.get("email") or "").strip().lower()
+    senha = data.get("senha") or ""
 
     if not email or not senha:
-        return jsonify(status="erro", mensagem="Preencha todos os campos"), 400
+        return jsonify(
+            status="erro",
+            mensagem="Preencha todos os campos"
+        ), 400
 
-    user = Usuario.query.filter_by(email=email.lower()).first()
-    if not user:
-        return jsonify(status="erro", mensagem="Conta não encontrada"), 401
+    usuario = Usuario.query.filter_by(
+        email=email
+    ).first()
 
-    if not check_password_hash(user.senha_hash, senha):
-        return jsonify(status="erro", mensagem="Senha incorreta"), 401
+    if (
+        not usuario
+        or not usuario.ativo
+        or not check_password_hash(
+            usuario.senha_hash,
+            senha
+        )
+    ):
+        return jsonify(
+            status="erro",
+            mensagem="E-mail ou senha inválidos"
+        ), 401
 
-    # 🟢 NOVO: Salva dados na Sessão do Flask (Server-Side)
-    session['user_id'] = user.id
-    session['user_nome'] = user.nome
-    session['user_email'] = user.email
-    session['user_perfil'] = user.perfil
+    session.clear()
 
-    # Não precisa retornar o nome no JSON, o Flask Session cuida do estado
-    return jsonify(status="ok", mensagem="Login realizado com sucesso")
+    session["user_id"] = usuario.id
+    session["user_nome"] = usuario.nome
+    session["user_email"] = usuario.email
+    session["user_perfil"] = usuario.perfil
 
+    return jsonify(
+        status="ok",
+        mensagem="Login realizado com sucesso"
+    )
 
 @app.route("/logout")
 @page_login_required
