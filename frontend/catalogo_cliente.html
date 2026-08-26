@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Catálogo - ProdManager</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='menu.css') }}">
+</head>
+
+<body>
+
+<header class="app-header">
+    <h1>
+        <a href="{{ url_for('inicio_page') }}" class="app-brand">
+            ProdManager
+        </a>
+    </h1>
+
+    {% include "_menu.html" %}
+</header>
+
+<main>
+    <section>
+        <h2>Catálogo de produtos</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Dimensões</th>
+                    <th>Acabamento</th>
+                    <th>Preço</th>
+                    <th>Disponibilidade</th>
+                </tr>
+            </thead>
+
+            <tbody id="tabela-catalogo">
+                <tr>
+                    <td colspan="5">Carregando produtos...</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+</main>
+
+<script>
+async function carregarCatalogo() {
+    const tbody = document.getElementById("tabela-catalogo");
+
+    try {
+        const resposta = await fetch("/produto/catalogo");
+        const produtos = await resposta.json();
+
+        if (!resposta.ok) {
+            throw new Error(
+                produtos.mensagem || "Erro ao carregar o catálogo"
+            );
+        }
+
+        tbody.innerHTML = "";
+
+        if (produtos.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5">
+                        Nenhum produto disponível.
+                    </td>
+                </tr>
+            `;
+
+            return;
+        }
+
+        produtos.forEach(produto => {
+            const dimensoes =
+                produto.altura_cm && produto.largura_cm
+                    ? `${produto.altura_cm} x ${produto.largura_cm} cm`
+                    : "Não informado";
+
+            const acabamento = [
+                produto.cor,
+                produto.moldura
+            ].filter(Boolean).join(" / ") || "Padrão";
+
+            const disponibilidade =
+                produto.estoque > 0
+                    ? "Disponível"
+                    : "Indisponível";
+
+            const linha = document.createElement("tr");
+
+            linha.innerHTML = `
+                <td>${produto.nome_produto}</td>
+                <td>${dimensoes}</td>
+                <td>${acabamento}</td>
+                <td>
+                    R$ ${parseFloat(produto.preco_base || 0).toFixed(2)}
+                </td>
+                <td>${disponibilidade}</td>
+            `;
+
+            tbody.appendChild(linha);
+        });
+
+    } catch (erro) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5">${erro.message}</td>
+            </tr>
+        `;
+    }
+}
+
+carregarCatalogo();
+</script>
+
+</body>
+</html>

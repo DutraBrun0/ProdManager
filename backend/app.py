@@ -109,6 +109,64 @@ def index():
 def register_page():
     return render_template("criar_conta.html")
 
+@app.route("/cliente/register", methods=["POST"])
+def registrar_cliente():
+    data = request.get_json(silent=True) or {}
+
+    nome = (data.get("nome") or "").strip()
+    email = (data.get("email") or "").strip().lower()
+    senha = data.get("senha") or ""
+
+    if not nome or not email or not senha:
+        return jsonify(
+            status="erro",
+            mensagem="Preencha todos os campos"
+        ), 400
+
+    if len(senha) < 8:
+        return jsonify(
+            status="erro",
+            mensagem="A senha deve possuir pelo menos 8 caracteres"
+        ), 400
+
+    if Usuario.query.filter_by(email=email).first():
+        return jsonify(
+            status="erro",
+            mensagem="E-mail já cadastrado"
+        ), 400
+
+    try:
+        cliente = Usuario(
+            nome=nome,
+            email=email,
+            senha_hash=generate_password_hash(senha),
+            perfil="cliente",
+            ativo=True
+        )
+
+        db.session.add(cliente)
+        db.session.commit()
+
+        return jsonify(
+            status="ok",
+            mensagem="Conta criada com sucesso"
+        ), 201
+
+    except Exception:
+        db.session.rollback()
+
+        return jsonify(
+            status="erro",
+            mensagem="Não foi possível criar a conta"
+        ), 500
+
+@app.route("/cadastro_cliente")
+def cadastro_cliente_page():
+    if "user_id" in session:
+        return redirect(url_for("inicio_page"))
+
+    return render_template("cadastro_cliente.html")
+
 # Rotas que não mudam (mantidas por segurança)
 @app.route("/produtos")
 @page_login_required
@@ -145,6 +203,12 @@ def faturamento_page():
 @page_roles_required("cliente")
 def meus_pedidos_page():
     return render_template("meus_pedidos.html")
+
+@app.route("/catalogo")
+@page_login_required
+@page_roles_required("cliente")
+def catalogo_cliente_page():
+    return render_template("catalogo_cliente.html")
 
 # -------------------
 # Util: gerar SKU simples

@@ -3,6 +3,7 @@
 <nav class="app-nav" aria-label="Navegação principal">
     <a href="{{ url_for('inicio_page') }}">Início</a>
     {% if perfil == "cliente" %}
+      <a href="{{ url_for('catalogo_cliente_page') }}">Catálogo</a>
     <a href="{{ url_for('meus_pedidos_page') }}">Meus pedidos</a>
     {% endif %}
 
