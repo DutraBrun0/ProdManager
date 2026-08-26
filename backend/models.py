@@ -127,7 +127,7 @@ class Pedido(db.Model):
     db.ForeignKey("usuario.id"),
     nullable=True
 )
-    status = db.Column(db.Enum('criado','aprovado','em_producao','em_logistica','entregue','finalizado'),
+    status = db.Column(db.Enum('criado','aprovado','em_producao','em_logistica','entregue','finalizado','cancelado'),
                             default='criado', nullable=False)
     total = db.Column(db.Numeric(14,2), nullable=False, default=0.00)
     criado_por = db.Column(db.Integer, db.ForeignKey("usuario.id"), nullable=False)

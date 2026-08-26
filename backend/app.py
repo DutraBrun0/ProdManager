@@ -828,6 +828,15 @@ def atualizar_status_pedido(pedido_id):
             "mensagem": "Pedido não encontrado"
         }), 404
 
+    if pedido.status == "cancelado":
+        return jsonify({
+            "status": "erro",
+            "mensagem": (
+            "O status de um pedido cancelado "
+            "não pode ser alterado"
+        )
+    }), 400
+
     try:
         pedido.status = novo_status
         db.session.commit()
@@ -912,9 +921,13 @@ def api_dashboard_resumo():
         ).all()
 
         em_andamento = sum(
-            pedido.status not in {"entregue", "finalizado"}
-            for pedido in pedidos
-        )
+        pedido.status not in {
+            "entregue",
+            "finalizado",
+            "cancelado"
+    }
+    for pedido in pedidos
+)
 
         finalizados = sum(
             pedido.status in {"entregue", "finalizado"}
@@ -924,7 +937,8 @@ def api_dashboard_resumo():
         total_gasto = sum(
             float(pedido.total or 0)
             for pedido in pedidos
-        )
+            if pedido.status != "cancelado"
+    )
 
         cards = [
             {
@@ -1001,10 +1015,18 @@ def api_dashboard_resumo():
     elif perfil in {"admin", "comercial"}:
         pedidos = Pedido.query.all()
 
+        pedidos_validos = [
+    pedido
+    for pedido in pedidos
+    if pedido.status != "cancelado"
+]
+
+        
+
         total_vendido = sum(
-            float(pedido.total or 0)
-            for pedido in pedidos
-        )
+    float(pedido.total or 0)
+    for pedido in pedidos_validos
+)
 
         total_clientes = Usuario.query.filter_by(
             perfil="cliente",
@@ -1029,7 +1051,7 @@ def api_dashboard_resumo():
             },
             {
                 "titulo": "Pedidos",
-                "valor": len(pedidos),
+                "valor": len(pedidos_validos),
                 "tipo": "numero"
             },
             {
@@ -1062,7 +1084,11 @@ def api_atividades_recentes():
     atividades = []
 
     # Vendas
-    ultimos_pedidos = Pedido.query.order_by(Pedido.created_at.desc()).limit(50).all()
+    ultimos_pedidos = Pedido.query.filter(
+    Pedido.status != "cancelado"
+).order_by(
+    Pedido.created_at.desc()
+).limit(50).all()
     for p in ultimos_pedidos:
         qtd_total = sum([i.quantidade for i in p.itens])
         nome_exemplo = "Produtos diversos"
@@ -1109,25 +1135,61 @@ def api_atividades_recentes():
     atividades.sort(key=lambda x: x['data'], reverse=True)
     return jsonify(atividades[:50])
 
-
-@app.route("/pedido/excluir/<int:id>", methods=["DELETE"])
+@app.route("/pedido/<int:pedido_id>/cancelar", methods=["PATCH"])
 @api_login_required
-@api_roles_required("admin")
-def excluir_pedido(id):
+@api_roles_required("admin", "comercial")
+def cancelar_pedido(pedido_id):
+    pedido = db.session.get(Pedido, pedido_id)
+
+    if not pedido:
+        return jsonify({
+            "status": "erro",
+            "mensagem": "Pedido não encontrado"
+        }), 404
+
+    if pedido.status == "cancelado":
+        return jsonify({
+            "status": "erro",
+            "mensagem": "Este pedido já está cancelado"
+        }), 400
+
+    if pedido.status in {"entregue", "finalizado"}:
+        return jsonify({
+            "status": "erro",
+            "mensagem": (
+                "Pedidos entregues ou finalizados "
+                "não podem ser cancelados"
+            )
+        }), 400
+
     try:
-        pedido = Pedido.query.get(id)
-        if not pedido:
-            return jsonify({"status": "erro", "mensagem": "Pedido não encontrado"}), 404
-        
-        ItemPedido.query.filter_by(pedido_id=id).delete()
-        
-        db.session.delete(pedido)
+        for item in pedido.itens:
+            registrar_entrada_variante(
+                variante_id=item.variante_id,
+                quantidade=int(item.quantidade),
+                usuario_id=session["user_id"],
+                motivo=f"Cancelamento do pedido #{pedido.id}"
+            )
+
+        pedido.status = "cancelado"
         db.session.commit()
-        
-        return jsonify({"status": "ok", "mensagem": "Venda excluída do histórico!"})
+
+        return jsonify({
+            "status": "ok",
+            "mensagem": (
+                "Pedido cancelado e produtos "
+                "devolvidos ao estoque"
+            ),
+            "pedido_id": pedido.id
+        })
+
     except Exception as e:
         db.session.rollback()
-        return jsonify({"status": "erro", "mensagem": str(e)}), 500
+
+        return jsonify({
+            "status": "erro",
+            "mensagem": str(e)
+        }), 500
 
 
 # -------------------
