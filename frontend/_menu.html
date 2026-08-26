@@ -9,8 +9,7 @@
 
     {% if perfil in ["admin", "comercial"] %}
         <a href="{{ url_for('produtos_page') }}">Produtos</a>
-        <a href="{{ url_for('clientes_page') }}">Clientes</a>
-        <a href="{{ url_for('lista_cliente_page') }}">Lista de clientes</a>
+      <a href="{{ url_for('lista_cliente_page') }}">Clientes</a>
         <a href="{{ url_for('faturamento_page') }}">Faturamento</a>
     {% endif %}
 
