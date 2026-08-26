@@ -1,0 +1,25 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Senhas e configurações locais
+.env
+.env.*
+!.env.example
+
+# Editores
+.vscode/
+.idea/
+
+# Bancos e arquivos locais
+*.db
+*.sqlite3
+*.log
+
+# Sistema operacional
+Thumbs.db
+.DS_Store

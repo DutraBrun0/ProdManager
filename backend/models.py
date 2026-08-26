@@ -1,7 +1,11 @@
-# models.py  (SUBSTITUA TODO O ARQUIVO PELO CONTEÚDO ABAIXO)
-from datetime import datetime
+from datetime import datetime, timezone
 from database import db
 from werkzeug.security import generate_password_hash, check_password_hash
+
+def utc_now():
+    return datetime.now(
+        timezone.utc
+    ).replace(tzinfo=None)
 
 # ==========================
 # 👤 Tabela de Usuários
@@ -15,8 +19,8 @@ class Usuario(db.Model):
     senha_hash = db.Column(db.Text, nullable=False)
     perfil = db.Column(db.String(50), default=None)
     ativo = db.Column(db.Boolean, default=True)
-    criado_em = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    criado_em = db.Column(db.DateTime, default=utc_now)
+    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
     def set_senha(self, senha: str):
         self.senha_hash = generate_password_hash(senha)
@@ -40,8 +44,8 @@ class Produto(db.Model):
     descricao = db.Column(db.Text)
     imagem_url = db.Column(db.Text)
     ativo = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utc_now)
+    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
     variantes = db.relationship("Variante", backref="produto", lazy=True)
 
@@ -66,8 +70,8 @@ class Variante(db.Model):
     sku = db.Column(db.String(100), nullable=False, unique=True, index=True)
     preco_base = db.Column(db.Numeric(12,2), nullable=False)
     ativo = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utc_now)
+    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
     # Relacionamentos
     estoque = db.relationship("Estoque", uselist=False, backref="variante", lazy=True)
@@ -87,7 +91,7 @@ class Estoque(db.Model):
     variante_id = db.Column(db.Integer, db.ForeignKey("variante.id"), nullable=False, unique=True)
     quantidade = db.Column(db.Integer, nullable=False, default=0)
     minimo = db.Column(db.Integer, nullable=False, default=0)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
     movimentos = db.relationship("MovimentoEstoque", backref="estoque", lazy=True)
 
@@ -106,7 +110,7 @@ class MovimentoEstoque(db.Model):
     usuario_id = db.Column(db.Integer, db.ForeignKey("usuario.id"), nullable=True)
     quantidade = db.Column(db.Integer, nullable=False)
     motivo = db.Column(db.String(255), nullable=False)
-    data = db.Column(db.DateTime, default=datetime.utcnow)
+    data = db.Column(db.DateTime, default=utc_now)
     observacao = db.Column(db.Text)
 
     def __repr__(self):
@@ -122,12 +126,17 @@ class Pedido(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     cliente_nome = db.Column(db.String(255), nullable=False)
     cliente_contato = db.Column(db.String(255), nullable=True)
-    status = db.Column(db.Enum('criado','aprovado','em_producao','em_logistica','entregue','finalizado'),
+    cliente_id = db.Column(
+    db.Integer,
+    db.ForeignKey("usuario.id"),
+    nullable=True
+)
+    status = db.Column(db.Enum('criado','aprovado','em_producao','em_logistica','entregue','finalizado','cancelado'),
                             default='criado', nullable=False)
     total = db.Column(db.Numeric(14,2), nullable=False, default=0.00)
     criado_por = db.Column(db.Integer, db.ForeignKey("usuario.id"), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utc_now)
+    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
     itens = db.relationship("ItemPedido", backref="pedido", lazy=True)
 
@@ -174,13 +183,13 @@ def registrar_entrada_variante(variante_id: int, quantidade: int, usuario_id: in
         usuario_id=usuario_id,
         quantidade=quantidade,
         motivo=motivo,
-        data=datetime.utcnow()
+        data=utc_now()
     )
     db.session.add(mov)
 
     # atualiza estoque
     estoque.quantidade = estoque.quantidade + int(quantidade)
-    estoque.updated_at = datetime.utcnow()
+    estoque.updated_at = utc_now()
 
     # Só salva se for explicitamente solicitado (útil para rotas simples de ajuste manual)
     if commit:
@@ -194,7 +203,10 @@ def registrar_saida_variante(variante_id, quantidade, usuario_id=None, motivo="S
     Registra saída do estoque.
     IMPORTANTE: Por padrão, NÃO commita. Isso permite que seja usada dentro do loop de Pedido.
     """
-    variante = Variante.query.get(variante_id)
+    variante = db.session.get(
+    Variante,
+    variante_id
+)
     if not variante:
         raise ValueError("Variante não encontrada")
 
@@ -212,7 +224,7 @@ def registrar_saida_variante(variante_id, quantidade, usuario_id=None, motivo="S
 
     # reduzir estoque
     estoque.quantidade -= quantidade
-    estoque.updated_at = datetime.utcnow()
+    estoque.updated_at = utc_now()
 
     # registrar movimento
     movimento = MovimentoEstoque(
@@ -220,7 +232,7 @@ def registrar_saida_variante(variante_id, quantidade, usuario_id=None, motivo="S
         usuario_id=usuario_id if usuario_id else None,
         quantidade=quantidade,
         motivo=motivo,
-        data=datetime.utcnow()
+        data=utc_now()
     )
 
     db.session.add(movimento)

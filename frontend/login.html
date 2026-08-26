@@ -1,47 +1,240 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
-  <title>Login</title>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Entrar - ProdManager</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='base.css') }}"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='auth.css') }}"
+    >
 </head>
-<body>
-  <div class="card">
-    <h2>Entrar</h2>
-    <form id="login-form">
-      <label for="email">E-mail</label>
-      <input type="email" id="email" placeholder="seu@exemplo.com" required>
-      <label for="password">Senha</label>
-      <input type="password" id="password" placeholder="Sua senha" required>
-      <button type="submit">Login</button>
-    </form>
-    <div class="links">
-      <a href="{{ url_for('register_page') }}">Criar conta</a>
-    </div>
-  </div>
 
-  <script>
-    const form = document.getElementById('login-form');
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('email').value;
-      const pw = document.getElementById('password').value;
+<body class="auth-page">
 
-      const res = await fetch("/login", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ email, senha: pw })
-      });
+<main class="auth-container">
 
-      const data = await res.json();
-      if(data.status === "ok"){
-        // 🟢 NOVO: O Flask Session gerencia o estado. Apenas redirecionamos.
-        window.location.href = "/inicio"; 
-      } else {
-        alert(data.mensagem);
-      }
-    });
-  </script>
+    <section class="auth-presentation">
+        <a
+            href="{{ url_for('index') }}"
+            class="auth-brand"
+        >
+            <span class="auth-brand-symbol">P</span>
+            ProdManager
+        </a>
+
+        <div class="auth-presentation-content">
+            <h1>
+                Gestão simples para produtos e pedidos.
+            </h1>
+
+            <p>
+                Acesse o sistema para acompanhar produtos,
+                estoque, clientes, vendas e pedidos em um
+                único lugar.
+            </p>
+
+            <div class="auth-benefits">
+                <div class="auth-benefit">
+                    <span class="auth-benefit-icon">✓</span>
+                    Controle centralizado de estoque
+                </div>
+
+                <div class="auth-benefit">
+                    <span class="auth-benefit-icon">✓</span>
+                    Acompanhamento de pedidos
+                </div>
+
+                <div class="auth-benefit">
+                    <span class="auth-benefit-icon">✓</span>
+                    Acesso separado por perfil
+                </div>
+            </div>
+        </div>
+
+        <span class="auth-presentation-footer">
+            Sistema de gerenciamento ProdManager
+               </span>
+    </section>
+
+    <section class="auth-content">
+        <div class="auth-card">
+
+            <div class="auth-header">
+                <span class="auth-eyebrow">
+                    Acesso ao sistema
+                </span>
+
+                <h2 class="auth-title">
+                    Bem-vindo
+                </h2>
+
+                <p class="auth-description">
+                    Digite seus dados para acessar sua conta.
+                </p>
+            </div>
+
+            <form
+                id="login-form"
+                class="auth-form"
+            >
+                <div
+                    id="login-message"
+                    class="auth-message auth-message-error"
+                    role="alert"
+                ></div>
+
+                <div class="auth-field">
+                    <label
+                        for="email"
+                        class="auth-label"
+                    >
+                        E-mail
+                    </label>
+
+                    <input
+                        type="email"
+                        id="email"
+                        class="auth-input"
+                        placeholder="seu@email.com"
+                        autocomplete="email"
+                        required
+                    >
+                </div>
+
+                <div class="auth-field">
+                    <label
+                        for="password"
+                        class="auth-label"
+                    >
+                        Senha
+                    </label>
+
+                    <div class="auth-password">
+                        <input
+                            type="password"
+                            id="password"
+                            class="auth-input"
+                            placeholder="Digite sua senha"
+                            autocomplete="current-password"
+                            required
+                        >
+
+                        <button
+                            type="button"
+                            id="password-toggle"
+                            class="auth-password-toggle"
+                        >
+                            Mostrar
+                        </button>
+                    </div>
+                </div>
+
+                <button
+                    type="submit"
+                    id="login-button"
+                    class="auth-submit"
+                >
+                    Entrar
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                Ainda não possui uma conta?
+
+                <a href="{{ url_for('cadastro_cliente_page') }}">
+                    Criar conta de cliente
+                </a>
+            </div>
+
+        </div>
+    </section>
+
+</main>
+
+<script>
+const form = document.getElementById("login-form");
+const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
+const loginButton = document.getElementById("login-button");
+const message = document.getElementById("login-message");
+const passwordToggle = document.getElementById("password-toggle");
+
+function exibirErro(texto) {
+    message.textContent = texto;
+    message.classList.add("is-visible");
+}
+
+function limparErro() {
+    message.textContent = "";
+    message.classList.remove("is-visible");
+}
+
+passwordToggle.addEventListener("click", () => {
+    const senhaVisivel = passwordInput.type === "text";
+
+    passwordInput.type = senhaVisivel
+        ? "password"
+        : "text";
+
+    passwordToggle.textContent = senhaVisivel
+        ? "Mostrar"
+        : "Ocultar";
+});
+
+form.addEventListener("submit", async event => {
+    event.preventDefault();
+    limparErro();
+
+    const email = emailInput.value.trim();
+    const senha = passwordInput.value;
+
+    loginButton.disabled = true;
+    loginButton.textContent = "Entrando...";
+
+    try {
+        const resposta = await fetch("/login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                email,
+                senha
+            })
+        });
+
+        const data = await resposta.json();
+
+        if (!resposta.ok || data.status !== "ok") {
+            throw new Error(
+                data.mensagem ||
+                "Não foi possível realizar o login."
+            );
+        }
+
+        window.location.href = "/inicio";
+
+    } catch (erro) {
+        exibirErro(erro.message);
+
+        loginButton.disabled = false;
+        loginButton.textContent = "Entrar";
+    }
+});
+</script>
+
 </body>
 </html>

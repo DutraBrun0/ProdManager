@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Catálogo - ProdManager</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='base.css') }}"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='components.css') }}"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='cliente.css') }}"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='menu.css') }}"
+    >
+</head>
+
+<body>
+
+<header class="app-header">
+    <h1>
+        <a
+            href="{{ url_for('inicio_page') }}"
+            class="app-brand"
+        >
+            prodmanager
+        </a>
+    </h1>
+
+    {% include "_menu.html" %}
+</header>
+
+<main class="app-main">
+
+    <div class="page-heading">
+        <div class="page-heading-content">
+            <span class="page-eyebrow">
+                Produtos
+            </span>
+
+            <h2 class="page-title">
+                Catálogo
+            </h2>
+
+            <p class="page-description">
+                Consulte os modelos disponíveis,
+                acabamentos e valores.
+            </p>
+        </div>
+    </div>
+
+    <section class="panel">
+        <div class="panel-body">
+            <div class="client-toolbar">
+                <div>
+                    <h3 class="panel-title">
+                        Produtos disponíveis
+                    </h3>
+
+                    <p class="panel-description">
+                        Selecione um modelo para consultar
+                        suas características.
+                    </p>
+                </div>
+
+                <div class="client-search">
+                    <label
+                        for="catalog-search"
+                        class="visually-hidden"
+                    >
+                        Pesquisar catálogo
+                    </label>
+
+                    <input
+                        type="search"
+                        id="catalog-search"
+                        class="form-control"
+                        placeholder="Pesquisar produto"
+                    >
+                </div>
+
+                <span
+                    id="catalog-count"
+                    class="badge badge-primary"
+                >
+                    0 produtos
+                </span>
+            </div>
+        </div>
+    </section>
+
+    <section
+        id="catalog-grid"
+        class="catalog-grid"
+        aria-live="polite"
+    >
+        <div class="panel">
+            <p class="state-message">
+                Carregando produtos...
+            </p>
+        </div>
+    </section>
+
+</main>
+
+<script>
+let catalogoCompleto = [];
+
+function formatarMoeda(valor) {
+    return new Intl.NumberFormat(
+        "pt-BR",
+        {
+            style: "currency",
+            currency: "BRL"
+        }
+    ).format(Number(valor || 0));
+}
+
+function renderizarCatalogo(produtos) {
+    const container = document.getElementById(
+        "catalog-grid"
+    );
+
+    const contador = document.getElementById(
+        "catalog-count"
+    );
+
+    contador.textContent =
+        `${produtos.length} ${
+            produtos.length === 1
+                ? "produto"
+                : "produtos"
+        }`;
+
+    container.innerHTML = "";
+
+    if (produtos.length === 0) {
+        container.innerHTML = `
+            <div class="panel">
+                <div class="empty-state">
+                    <h3 class="empty-state-title">
+                        Nenhum produto encontrado
+                    </h3>
+
+                    <p class="empty-state-text">
+                        Tente utilizar outro termo de pesquisa.
+                    </p>
+                </div>
+            </div>
+        `;
+
+        return;
+    }
+
+    produtos.forEach(produto => {
+        const disponivel =
+            Number(produto.estoque || 0) > 0;
+
+        const dimensoes =
+            produto.altura_cm && produto.largura_cm
+                ? `${produto.altura_cm} × ` +
+                  `${produto.largura_cm} cm`
+                : "Não informado";
+
+        const acabamento = [
+            produto.cor,
+            produto.moldura
+        ].filter(Boolean).join(" / ") || "Padrão";
+
+        const card = document.createElement("article");
+        card.className = "product-card";
+
+        card.innerHTML = `
+            <div class="product-card-top">
+                <span class="product-card-format">
+                    ${produto.formato || "Modelo"}
+                </span>
+            </div>
+
+            <div class="product-card-body">
+                <h3 class="product-card-title">
+                    ${produto.nome_produto}
+                </h3>
+
+                <span class="product-card-sku">
+                    ${produto.sku}
+                </span>
+
+                <div class="product-details">
+                    <div class="product-detail-row">
+                        <span class="product-detail-label">
+                            Dimensões
+                        </span>
+
+                        <span class="product-detail-value">
+                            ${dimensoes}
+                        </span>
+                    </div>
+
+                    <div class="product-detail-row">
+                        <span class="product-detail-label">
+                            Acabamento
+                        </span>
+
+                        <span class="product-detail-value">
+                            ${acabamento}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="product-card-footer">
+                    <strong class="product-price">
+                        ${formatarMoeda(produto.preco_base)}
+                    </strong>
+
+                    <span
+                        class="
+                            badge
+                            ${
+                                disponivel
+                                    ? "badge-success"
+                                    : "badge-danger"
+                            }
+                        "
+                    >
+                        ${
+                            disponivel
+                                ? "Disponível"
+                                : "Indisponível"
+                        }
+                    </span>
+                </div>
+            </div>
+        `;
+
+        container.appendChild(card);
+    });
+}
+
+async function carregarCatalogo() {
+    try {
+        const resposta = await fetch(
+            "/produto/catalogo"
+        );
+
+        const produtos = await resposta.json();
+
+        if (!resposta.ok) {
+            throw new Error(
+                produtos.mensagem ||
+                "Erro ao carregar o catálogo"
+            );
+        }
+
+        catalogoCompleto = produtos;
+        renderizarCatalogo(produtos);
+
+    } catch (erro) {
+        document.getElementById(
+            "catalog-grid"
+        ).innerHTML = `
+            <div class="panel">
+                <div class="empty-state">
+                    <h3 class="empty-state-title">
+                        Erro ao carregar catálogo
+                    </h3>
+
+                    <p class="empty-state-text">
+                        ${erro.message}
+                    </p>
+                </div>
+            </div>
+        `;
+    }
+}
+
+document
+    .getElementById("catalog-search")
+    .addEventListener("input", evento => {
+        const pesquisa = evento.target.value
+            .trim()
+            .toLowerCase();
+
+        const produtosFiltrados =
+            catalogoCompleto.filter(produto => {
+                const texto = [
+                    produto.nome_produto,
+                    produto.sku,
+                    produto.formato,
+                    produto.cor,
+                    produto.moldura
+                ].filter(Boolean).join(" ").toLowerCase();
+
+                return texto.includes(pesquisa);
+            });
+
+        renderizarCatalogo(produtosFiltrados);
+    });
+
+carregarCatalogo();
+</script>
+
+</body>
+</html>

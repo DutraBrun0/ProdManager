@@ -1,76 +1,414 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
-  <title>Criar Conta</title>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Cadastrar usuário - ProdManager</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='base.css') }}"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='components.css') }}"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='menu.css') }}"
+    >
 </head>
+
 <body>
-  <div class="card">
-    <h2>Criar Conta</h2>
-    <form id="register-form">
-      <label for="reg-nome">Nome</label>
-      <input type="text" id="reg-nome" placeholder="Seu nome" required>
 
-      <label for="reg-email">E-mail</label>
-      <input type="email" id="reg-email" placeholder="seu@exemplo.com" required>
+<header class="app-header">
+    <h1>
+        <a
+            href="{{ url_for('inicio_page') }}"
+            class="app-brand"
+        >
+            ProdManager
+        </a>
+    </h1>
 
-      <label for="reg-password">Senha</label>
-      <input type="password" id="reg-password" placeholder="Sua senha" required>
+    {% include "_menu.html" %}
+</header>
 
-      <label for="reg-password2">Confirmar senha</label>
-      <input type="password" id="reg-password2" placeholder="Repita a senha" required>
-      <span id="senha-msg" style="color:#ff0000; font-size:0.85em; margin-top:4px; display:block;"></span>
+<main class="app-main">
 
-      <button type="submit">Cadastrar</button>
-    </form>
+    <div class="page-heading">
+        <div class="page-heading-content">
+            <span class="page-eyebrow">
+                Administração
+            </span>
 
-    <div class="links">
-      <a href="{{ url_for('index') }}">Voltar para login</a>
+            <h2 class="page-title">
+                Cadastrar usuário
+            </h2>
+
+            <p class="page-description">
+                Crie contas e determine quais áreas do sistema
+                cada usuário poderá acessar.
+            </p>
+        </div>
     </div>
-  </div>
 
-  <script>
-    const form = document.getElementById('register-form');
-    const senha = document.getElementById('reg-password');
-    const senha2 = document.getElementById('reg-password2');
-    const msg = document.getElementById('senha-msg');
+    <div class="content-grid content-grid-two">
 
-    senha2.addEventListener('input', () => {
-      if(senha.value !== senha2.value){
-        msg.textContent = "Senhas não coincidem!";
-      } else {
-        msg.textContent = "";
-      }
-    });
+        <aside class="panel">
+            <div class="panel-header">
+                <div>
+                    <h3 class="panel-title">
+                        Perfis de acesso
+                    </h3>
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
+                    <p class="panel-description">
+                        Cada perfil possui permissões diferentes
+                        dentro do sistema.
+                    </p>
+                </div>
+            </div>
 
-      const nome = document.getElementById('reg-nome').value;
-      const email = document.getElementById('reg-email').value;
-      const senhaVal = senha.value;
-      const senhaConf = senha2.value;
+            <div class="panel-body form-stack">
 
-      if(senhaVal !== senhaConf){
-        msg.textContent = "Senhas não coincidem!";
+                <div>
+                    <span class="badge badge-primary">
+                        Comercial
+                    </span>
+
+                    <p class="panel-description">
+                        Acessa produtos, clientes, faturamento e
+                        gerenciamento dos pedidos.
+                    </p>
+                </div>
+
+                <div>
+                    <span class="badge badge-warning">
+                        Estoque
+                    </span>
+
+                    <p class="panel-description">
+                        Consulta o estoque e registra entradas e
+                        saídas de produtos.
+                    </p>
+                </div>
+
+                <div>
+                    <span class="badge badge-neutral">
+                        Cliente
+                    </span>
+
+                    <p class="panel-description">
+                        Consulta o catálogo e acompanha somente
+                        os pedidos vinculados à própria conta.
+                    </p>
+                </div>
+
+            </div>
+        </aside>
+
+        <section class="panel">
+            <div class="panel-header">
+                <div>
+                    <h3 class="panel-title">
+                        Dados do usuário
+                    </h3>
+
+                    <p class="panel-description">
+                        Preencha os campos para criar o novo acesso.
+                    </p>
+                </div>
+            </div>
+
+            <div class="panel-body">
+
+                <form
+                    id="register-form"
+                    class="form-stack"
+                >
+                    <div
+                        id="register-message"
+                        class="alert"
+                        role="alert"
+                        hidden
+                    ></div>
+
+                    <div class="form-field">
+                        <label
+                            for="reg-nome"
+                            class="form-label"
+                        >
+                            Nome completo
+                        </label>
+
+                        <input
+                            type="text"
+                            id="reg-nome"
+                            class="form-control"
+                            placeholder="Digite o nome do usuário"
+                            autocomplete="name"
+                            minlength="3"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-field">
+                        <label
+                            for="reg-email"
+                            class="form-label"
+                        >
+                            E-mail
+                        </label>
+
+                        <input
+                            type="email"
+                            id="reg-email"
+                            class="form-control"
+                            placeholder="usuario@email.com"
+                            autocomplete="email"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-field">
+                        <label
+                            for="reg-perfil"
+                            class="form-label"
+                        >
+                            Perfil de acesso
+                        </label>
+
+                        <select
+                            id="reg-perfil"
+                            class="form-control"
+                            required
+                        >
+                            <option value="">
+                                Selecione um perfil
+                            </option>
+
+                            <option value="cliente">
+                                Cliente
+                            </option>
+
+                            <option value="comercial">
+                                Comercial
+                            </option>
+
+                            <option value="estoque">
+                                Estoque
+                            </option>
+                        </select>
+
+                        <span class="form-help">
+                            O perfil define as páginas e ações
+                            permitidas para o usuário.
+                        </span>
+                    </div>
+
+                    <div class="form-grid">
+
+                        <div class="form-field">
+                            <label
+                                for="reg-password"
+                                class="form-label"
+                            >
+                                Senha
+                            </label>
+
+                            <input
+                                type="password"
+                                id="reg-password"
+                                class="form-control"
+                                placeholder="Mínimo de 8 caracteres"
+                                autocomplete="new-password"
+                                minlength="8"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-field">
+                            <label
+                                for="reg-password2"
+                                class="form-label"
+                            >
+                                Confirmar senha
+                            </label>
+
+                            <input
+                                type="password"
+                                id="reg-password2"
+                                class="form-control"
+                                placeholder="Repita a senha"
+                                autocomplete="new-password"
+                                minlength="8"
+                                required
+                            >
+                        </div>
+
+                    </div>
+
+                    <div class="form-actions">
+                        <a
+                            href="{{ url_for('inicio_page') }}"
+                            class="button button-secondary"
+                        >
+                            Cancelar
+                        </a>
+
+                        <button
+                            type="submit"
+                            id="register-button"
+                            class="button button-primary"
+                        >
+                            Cadastrar usuário
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+        </section>
+
+    </div>
+
+</main>
+
+<script>
+const form = document.getElementById("register-form");
+
+const nomeInput =
+    document.getElementById("reg-nome");
+
+const emailInput =
+    document.getElementById("reg-email");
+
+const perfilInput =
+    document.getElementById("reg-perfil");
+
+const senhaInput =
+    document.getElementById("reg-password");
+
+const confirmarSenhaInput =
+    document.getElementById("reg-password2");
+
+const mensagem =
+    document.getElementById("register-message");
+
+const registerButton =
+    document.getElementById("register-button");
+
+function exibirMensagem(texto, tipo) {
+    mensagem.textContent = texto;
+    mensagem.hidden = false;
+
+    mensagem.className =
+        tipo === "success"
+            ? "alert alert-success"
+            : "alert alert-danger";
+}
+
+function limparMensagem() {
+    mensagem.textContent = "";
+    mensagem.hidden = true;
+    mensagem.className = "alert";
+}
+
+confirmarSenhaInput.addEventListener("input", () => {
+    if (
+        confirmarSenhaInput.value &&
+        senhaInput.value !== confirmarSenhaInput.value
+    ) {
+        exibirMensagem(
+            "As senhas ainda não coincidem.",
+            "error"
+        );
+    } else {
+        limparMensagem();
+    }
+});
+
+form.addEventListener("submit", async evento => {
+    evento.preventDefault();
+    limparMensagem();
+
+    const nome = nomeInput.value.trim();
+    const email = emailInput.value.trim();
+    const perfil = perfilInput.value;
+    const senha = senhaInput.value;
+    const confirmarSenha = confirmarSenhaInput.value;
+
+    if (senha.length < 8) {
+        exibirMensagem(
+            "A senha precisa ter pelo menos 8 caracteres.",
+            "error"
+        );
+
         return;
-      }
+    }
 
-      const res = await fetch("/register", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ nome, email, senha: senhaVal })
-      });
+    if (senha !== confirmarSenha) {
+        exibirMensagem(
+            "As senhas não coincidem.",
+            "error"
+        );
 
-      const data = await res.json();
-      alert(data.mensagem);
+        return;
+    }
 
-      if(data.status === "ok"){
-        window.location.href = "/";
-      }
-    });
-  </script>
+    registerButton.disabled = true;
+    registerButton.textContent = "Cadastrando...";
+
+    try {
+        const resposta = await fetch("/register", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                nome,
+                email,
+                senha,
+                perfil
+            })
+        });
+
+        const data = await resposta.json();
+
+        if (!resposta.ok || data.status !== "ok") {
+            throw new Error(
+                data.mensagem ||
+                "Não foi possível cadastrar o usuário."
+            );
+        }
+
+        exibirMensagem(
+            data.mensagem ||
+            "Usuário cadastrado com sucesso!",
+            "success"
+        );
+
+        registerButton.textContent = "Usuário cadastrado";
+
+        setTimeout(() => {
+            window.location.href = "/inicio";
+        }, 1000);
+
+    } catch (erro) {
+        exibirMensagem(erro.message, "error");
+
+        registerButton.disabled = false;
+        registerButton.textContent = "Cadastrar usuário";
+    }
+});
+</script>
+
 </body>
 </html>

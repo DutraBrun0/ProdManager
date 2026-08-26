@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for
+from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash
 from database import init_app, db
 from models import (
@@ -7,28 +8,120 @@ from models import (
     registrar_entrada_variante, registrar_saida_variante
 )
 import os
+from dotenv import load_dotenv
 import re
-from datetime import datetime
+from functools import wraps
 
 # Diretórios
 BASE_DIR = os.path.dirname(__file__)
+load_dotenv(os.path.join(BASE_DIR, "..", ".env"))
 TEMPLATE_DIR = os.path.join(BASE_DIR, "../frontend")
 
 app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=TEMPLATE_DIR)
 init_app(app)
 
+migrate = Migrate(app, db)
+
 # 🔴 NOVO: CHAVE SECRETA OBRIGATÓRIA PARA SESSÕES
-app.secret_key = "a_chave_secreta_segura_para_mev_glass"
+app.secret_key = os.getenv("FLASK_SECRET_KEY")
+
+if not app.secret_key:
+    raise RuntimeError("FLASK_SECRET_KEY não encontrada no arquivo .env")
+
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=(
+        os.getenv(
+            "SESSION_COOKIE_SECURE",
+            "false"
+        ).lower() == "true"
+    )
+)
+
+
+@app.after_request
+def adicionar_cabecalhos_seguranca(resposta):
+    resposta.headers["X-Content-Type-Options"] = "nosniff"
+    resposta.headers["X-Frame-Options"] = "DENY"
+    resposta.headers["Referrer-Policy"] = (
+        "strict-origin-when-cross-origin"
+    )
+
+    if app.config["SESSION_COOKIE_SECURE"]:
+        resposta.headers["Strict-Transport-Security"] = (
+            "max-age=31536000; includeSubDomains"
+        )
+
+    return resposta
 
 # -------------------
 # Páginas (com verificação de login no /inicio)
 # -------------------
+def page_login_required(funcao):
+    @wraps(funcao)
+    def protegida(*args, **kwargs):
+        if "user_id" not in session:
+            return redirect(url_for("index"))
+
+        return funcao(*args, **kwargs)
+
+    return protegida
+
+def page_roles_required(*perfis_permitidos):
+    def decorator(funcao):
+        @wraps(funcao)
+        def protegida(*args, **kwargs):
+            if "user_id" not in session:
+                return redirect(url_for("index"))
+
+            if session.get("user_perfil") not in perfis_permitidos:
+                return "Acesso negado: você não possui permissão.", 403
+
+            return funcao(*args, **kwargs)
+
+        return protegida
+
+    return decorator
+
+def api_login_required(funcao):
+    @wraps(funcao)
+    def protegida(*args, **kwargs):
+        if "user_id" not in session:
+            return jsonify(
+                status="erro",
+                mensagem="Autenticação necessária"
+            ), 401
+
+        return funcao(*args, **kwargs)
+
+    return protegida
+
+def api_roles_required(*perfis_permitidos):
+    def decorator(funcao):
+        @wraps(funcao)
+        def protegida(*args, **kwargs):
+            if "user_id" not in session:
+                return jsonify(
+                    status="erro",
+                    mensagem="Autenticação necessária"
+                ), 401
+
+            if session.get("user_perfil") not in perfis_permitidos:
+                return jsonify(
+                    status="erro",
+                    mensagem="Você não possui permissão para esta ação"
+                ), 403
+
+            return funcao(*args, **kwargs)
+
+        return protegida
+
+    return decorator
+
 @app.route("/inicio")
-def inicio_page():
-    # 🟢 NOVO: Se não estiver logado, redireciona para o login
-    if 'user_id' not in session:
-        return redirect(url_for('index'))
-    
+@page_login_required
+def inicio_page():    
     # Envia o nome do usuário logado para o template
     return render_template("inicio.html", nome_usuario=session.get('user_nome'))
 
@@ -40,34 +133,111 @@ def index():
     return render_template("login.html")
 
 @app.route("/register_page")
+@page_login_required
+@page_roles_required("admin")
 def register_page():
     return render_template("criar_conta.html")
 
+@app.route("/cliente/register", methods=["POST"])
+def registrar_cliente():
+    data = request.get_json(silent=True) or {}
+
+    nome = (data.get("nome") or "").strip()
+    email = (data.get("email") or "").strip().lower()
+    senha = data.get("senha") or ""
+
+    if not nome or not email or not senha:
+        return jsonify(
+            status="erro",
+            mensagem="Preencha todos os campos"
+        ), 400
+
+    if len(senha) < 8:
+        return jsonify(
+            status="erro",
+            mensagem="A senha deve possuir pelo menos 8 caracteres"
+        ), 400
+
+    if Usuario.query.filter_by(email=email).first():
+        return jsonify(
+            status="erro",
+            mensagem="E-mail já cadastrado"
+        ), 400
+
+    try:
+        cliente = Usuario(
+            nome=nome,
+            email=email,
+            senha_hash=generate_password_hash(senha),
+            perfil="cliente",
+            ativo=True
+        )
+
+        db.session.add(cliente)
+        db.session.commit()
+
+        return jsonify(
+            status="ok",
+            mensagem="Conta criada com sucesso"
+        ), 201
+
+    except Exception:
+        db.session.rollback()
+
+        return jsonify(
+            status="erro",
+            mensagem="Não foi possível criar a conta"
+        ), 500
+
+@app.route("/cadastro_cliente")
+def cadastro_cliente_page():
+    if "user_id" in session:
+        return redirect(url_for("inicio_page"))
+
+    return render_template("cadastro_cliente.html")
+
 # Rotas que não mudam (mantidas por segurança)
 @app.route("/produtos")
+@page_login_required
+@page_roles_required("admin", "comercial")
 def produtos_page():
     return render_template("produtos.html")
 
 @app.route("/clientes")
+@page_login_required
+@page_roles_required("admin", "comercial")
 def clientes_page():
     return render_template("clientes.html")
 
 @app.route("/lista_cliente")
+@page_login_required
+@page_roles_required("admin", "comercial")
 def lista_cliente_page():
     return render_template("lista_clientes.html")
 
 @app.route("/estoque")
+@page_login_required
+@page_roles_required("admin", "estoque")
 def estoque_page():
     return render_template("estoque.html")
 
 @app.route("/faturamento")
+@page_login_required
+@page_roles_required("admin", "comercial")
 def faturamento_page():
     return render_template("faturamento.html")
 
-@app.route("/dashboard")
-def dashboard_page():
-    return render_template("dashboard.html")
+@app.route("/meus_pedidos")
+@page_login_required
+@page_roles_required("cliente")
+def meus_pedidos_page():
+    return render_template("meus_pedidos.html")
 
+@app.route("/catalogo")
+@page_login_required
+@page_roles_required("cliente")
+def catalogo_cliente_page():
+    return render_template("catalogo_cliente.html")
 
 # -------------------
 # Util: gerar SKU simples
@@ -92,59 +262,113 @@ def gerar_sku_from_fields(produto_linha: str, altura=None, largura=None, cor=Non
 # -------------------
 
 @app.route("/register", methods=["POST"])
+@api_login_required
+@api_roles_required("admin")
 def register():
-    data = request.get_json()
-    nome = data.get("nome")
-    email = data.get("email")
-    senha = data.get("senha")
+    data = request.get_json(silent=True) or {}
 
-    if not email or not senha:
-        return jsonify(status="erro", mensagem="Preencha todos os campos"), 400
+    nome = (data.get("nome") or "").strip()
+    email = (data.get("email") or "").strip().lower()
+    senha = data.get("senha") or ""
+    perfil = (data.get("perfil") or "").strip().lower()
 
-    if Usuario.query.filter_by(email=email.lower()).first():
-        return jsonify(status="erro", mensagem="E-mail já cadastrado"), 400
+    perfis_permitidos = {
+        "cliente",
+        "comercial",
+        "estoque"
+    }
+
+    if not nome or not email or not senha or not perfil:
+        return jsonify(
+            status="erro",
+            mensagem="Preencha todos os campos"
+        ), 400
+
+    if perfil not in perfis_permitidos:
+        return jsonify(
+            status="erro",
+            mensagem="Perfil de usuário inválido"
+        ), 400
+
+    if len(senha) < 8:
+        return jsonify(
+            status="erro",
+            mensagem="A senha deve possuir pelo menos 8 caracteres"
+        ), 400
+
+    if Usuario.query.filter_by(email=email).first():
+        return jsonify(
+            status="erro",
+            mensagem="E-mail já cadastrado"
+        ), 400
 
     try:
-        user = Usuario(
-            nome=nome.lower() if nome else None,
-            perfil="cliente",
-            email=email.lower(),
+        usuario = Usuario(
+            nome=nome,
+            perfil=perfil,
+            email=email,
             senha_hash=generate_password_hash(senha)
         )
-        db.session.add(user)
+
+        db.session.add(usuario)
         db.session.commit()
-        return jsonify(status="ok", mensagem="Conta criada com sucesso!")
-    except Exception as e:
+
+        return jsonify(
+            status="ok",
+            mensagem="Conta criada com sucesso!"
+        ), 201
+
+    except Exception:
         db.session.rollback()
-        return jsonify(status="erro", mensagem=str(e))
 
-
+        return jsonify(
+            status="erro",
+            mensagem="Não foi possível criar a conta"
+        ), 500
 @app.route("/login", methods=["POST"])
 def login():
-    data = request.get_json()
-    email = data.get("email")
-    senha = data.get("senha")
+    data = request.get_json(silent=True) or {}
+
+    email = (data.get("email") or "").strip().lower()
+    senha = data.get("senha") or ""
 
     if not email or not senha:
-        return jsonify(status="erro", mensagem="Preencha todos os campos"), 400
+        return jsonify(
+            status="erro",
+            mensagem="Preencha todos os campos"
+        ), 400
 
-    user = Usuario.query.filter_by(email=email.lower()).first()
-    if not user:
-        return jsonify(status="erro", mensagem="Conta não encontrada"), 401
+    usuario = Usuario.query.filter_by(
+        email=email
+    ).first()
 
-    if not check_password_hash(user.senha_hash, senha):
-        return jsonify(status="erro", mensagem="Senha incorreta"), 401
+    if (
+        not usuario
+        or not usuario.ativo
+        or not check_password_hash(
+            usuario.senha_hash,
+            senha
+        )
+    ):
+        return jsonify(
+            status="erro",
+            mensagem="E-mail ou senha inválidos"
+        ), 401
 
-    # 🟢 NOVO: Salva dados na Sessão do Flask (Server-Side)
-    session['user_id'] = user.id
-    session['user_nome'] = user.nome
-    session['user_email'] = user.email
+    session.clear()
 
-    # Não precisa retornar o nome no JSON, o Flask Session cuida do estado
-    return jsonify(status="ok", mensagem="Login realizado com sucesso")
+    session["user_id"] = usuario.id
+    session["user_nome"] = usuario.nome
+    session["user_email"] = usuario.email
+    session["user_perfil"] = usuario.perfil
 
+    return jsonify(
+        status="ok",
+        mensagem="Login realizado com sucesso"
+    )
 
 @app.route("/logout")
+@page_login_required
 def logout():
     # 🟢 NOVO: Limpa a sessão e redireciona para o login
     session.clear()
@@ -154,19 +378,13 @@ def logout():
 # -------------------
 # Teste DB
 # -------------------
-@app.route("/teste_db")
-def teste_db():
-    try:
-        db.session.execute("SELECT 1")
-        return "✅ Conectado ao banco!"
-    except Exception as e:
-        return f"❌ Erro ao conectar: {e}"
-
 
 # -------------------
 # Endpoints CRUD, Estoque, Pedidos e Atividades (Mantidos)
 # -------------------
 @app.route("/produto/variantes", methods=["POST"])
+@api_login_required
+@api_roles_required("admin", "comercial")
 def criar_produto_com_variantes():
     """
     Cria um novo produto e suas variantes.
@@ -247,6 +465,7 @@ def criar_produto_com_variantes():
 
 
 @app.route("/produto/catalogo", methods=["GET"])
+@api_login_required
 def listar_catalogo():
     """ Retorna todas as variantes ativas com dados do produto e estoque. """
     q = db.session.query(Produto, Variante, Estoque) \
@@ -275,6 +494,8 @@ def listar_catalogo():
 
 
 @app.route("/estoque/variantes", methods=["GET"])
+@api_login_required
+@api_roles_required("admin", "estoque", "comercial")
 def listar_variantes_estoque():
     variantes = Variante.query.filter_by(ativo=True).all()
     resp = []
@@ -297,52 +518,117 @@ def listar_variantes_estoque():
     return jsonify(resp)
 
 @app.route("/estoque/entrada_sku", methods=["POST"])
+@api_login_required
+@api_roles_required("admin", "estoque")
 def entrada_sku():
-    """ Payload: { "variante_id": 1, "quantidade": 5, "usuario_id": 1, "motivo": "compra" } """
-    data = request.get_json()
-    variante_id = data.get("variante_id")
-    quantidade = int(data.get("quantidade", 0))
-    usuario_id = data.get("usuario_id")
-    motivo = data.get("motivo", "Entrada manual")
+    data = request.get_json(silent=True) or {}
 
-    if not variante_id or quantidade <= 0:
-        return jsonify({"error": "variante_id and quantidade>0 required"}), 400
+    variante_id = data.get("variante_id")
+    usuario_id = session["user_id"]
+    motivo = data.get("motivo") or "Entrada manual"
 
     try:
-        novo = registrar_entrada_variante(variante_id=variante_id, quantidade=quantidade, usuario_id=usuario_id, motivo=motivo)
-        return jsonify({"status": "ok", "estoque_atual": novo})
-    except Exception as e:
-        return jsonify({"status": "erro", "mensagem": str(e)}), 400
+        quantidade = int(data.get("quantidade", 0))
+    except (TypeError, ValueError):
+        return jsonify({
+            "status": "erro",
+            "mensagem": "Quantidade inválida"
+        }), 400
 
+    if not variante_id or quantidade <= 0:
+        return jsonify({
+            "status": "erro",
+            "mensagem": "Informe a variante e uma quantidade maior que zero"
+        }), 400
+
+    try:
+        novo = registrar_entrada_variante(
+            variante_id=variante_id,
+            quantidade=quantidade,
+            usuario_id=usuario_id,
+            motivo=motivo
+        )
+
+        db.session.commit()
+
+        return jsonify({
+            "status": "ok",
+            "estoque_atual": novo
+        })
+
+    except Exception as e:
+        db.session.rollback()
+
+        return jsonify({
+            "status": "erro",
+            "mensagem": str(e)
+        }), 400
 
 @app.route("/estoque/saida_sku", methods=["POST"])
+@api_login_required
+@api_roles_required("admin", "estoque")
 def saida_sku():
-    """ Payload: { "variante_id": 1, "quantidade": 2, "usuario_id": 1, "motivo": "venda" } """
-    data = request.get_json()
-    variante_id = data.get("variante_id")
-    quantidade = int(data.get("quantidade", 0))
-    usuario_id = data.get("usuario_id")
-    motivo = data.get("motivo", "Saída por pedido")
+    data = request.get_json(silent=True) or {}
 
-    if not variante_id or quantidade <= 0:
-        return jsonify({"error": "variante_id and quantidade>0 required"}), 400
+    variante_id = data.get("variante_id")
+    usuario_id = session["user_id"]
+    motivo = data.get("motivo") or "Saída manual"
 
     try:
-        novo = registrar_saida_variante(variante_id=variante_id, quantidade=quantidade, usuario_id=usuario_id, motivo=motivo)
-        return jsonify({"status": "ok", "estoque_atual": novo})
-    except ValueError as ve:
-        return jsonify({"status": "erro", "mensagem": str(ve)}), 400
+        quantidade = int(data.get("quantidade", 0))
+    except (TypeError, ValueError):
+        return jsonify({
+            "status": "erro",
+            "mensagem": "Quantidade inválida"
+        }), 400
+
+    if not variante_id or quantidade <= 0:
+        return jsonify({
+            "status": "erro",
+            "mensagem": "Informe a variante e uma quantidade maior que zero"
+        }), 400
+
+    try:
+        novo = registrar_saida_variante(
+            variante_id=variante_id,
+            quantidade=quantidade,
+            usuario_id=usuario_id,
+            motivo=motivo
+        )
+
+        db.session.commit()
+
+        return jsonify({
+            "status": "ok",
+            "estoque_atual": novo
+        })
+
+    except ValueError as e:
+        db.session.rollback()
+
+        return jsonify({
+            "status": "erro",
+            "mensagem": str(e)
+        }), 400
+
     except Exception as e:
-        return jsonify({"status": "erro", "mensagem": str(e)}), 500
+        db.session.rollback()
+
+        return jsonify({
+            "status": "erro",
+            "mensagem": str(e)
+        }), 500
 
 
 @app.route("/estoque/entrada", methods=["POST"])
+@api_login_required
+@api_roles_required("admin")
 def entrada_estoque_compat():
     """ Endpoint legado: tenta localizar variante pelo produto e incrementar estoque da primeira variante. """
     data = request.get_json()
     produto_id = data.get("produto_id")
     quantidade = int(data.get("quantidade", 0))
-    usuario_id = data.get("usuario_id")
+    usuario_id = session["user_id"]
 
     if not produto_id or quantidade <= 0:
         return jsonify({"status": "erro", "mensagem": "produto_id and quantidade>0 required"}), 400
@@ -357,62 +643,130 @@ def entrada_estoque_compat():
     except Exception as e:
         return jsonify({"status": "erro", "mensagem": str(e)}), 400
 
+@app.route("/api/clientes/cadastrar", methods=["POST"])
+@api_login_required
+@api_roles_required("admin", "comercial")
+def cadastrar_cliente_api():
+    data = request.get_json(silent=True) or {}
 
-@app.route("/pedido/confirmar", methods=["POST"])
-def confirmar_pedido():
-    data = request.get_json()
-    item_id = data.get("item_pedido_id")
-    usuario_id = data.get("usuario_id")
+    nome = (data.get("nome") or "").strip()
+    email = (data.get("email") or "").strip().lower()
+    senha = data.get("senha") or ""
 
-    if not item_id:
-        return jsonify({"status": "erro", "mensagem": "item_pedido_id required"}), 400
+    if not nome or not email or not senha:
+        return jsonify({
+            "status": "erro",
+            "mensagem": "Preencha todos os campos"
+        }), 400
 
-    item = ItemPedido.query.get(item_id)
-    if not item:
-        return jsonify({"status": "erro", "mensagem": "Item não encontrado"}), 404
+    if len(senha) < 8:
+        return jsonify({
+            "status": "erro",
+            "mensagem": (
+                "A senha deve possuir pelo menos "
+                "8 caracteres"
+            )
+        }), 400
+
+    if Usuario.query.filter_by(email=email).first():
+        return jsonify({
+            "status": "erro",
+            "mensagem": "E-mail já cadastrado"
+        }), 400
 
     try:
-        novo = registrar_saida_variante(variante_id=item.variante_id, quantidade=int(item.quantidade), usuario_id=usuario_id, motivo="Saída por confirmação de pedido")
-        return jsonify({"status": "ok", "estoque_atual": novo})
-    except Exception as e:
-        return jsonify({"status": "erro", "mensagem": str(e)}), 400
+        cliente = Usuario(
+            nome=nome,
+            email=email,
+            senha_hash=generate_password_hash(senha),
+            perfil="cliente",
+            ativo=True
+        )
 
+        db.session.add(cliente)
+        db.session.commit()
 
-@app.route('/api/clientes', methods=['GET'])
+        return jsonify({
+            "status": "ok",
+            "mensagem": "Cliente cadastrado com sucesso",
+            "cliente": {
+                "id": cliente.id,
+                "nome": cliente.nome,
+                "email": cliente.email
+            }
+        }), 201
+
+    except Exception:
+        db.session.rollback()
+
+        return jsonify({
+            "status": "erro",
+            "mensagem": "Não foi possível cadastrar o cliente"
+        }), 500
+
+@app.route("/api/clientes", methods=["GET"])
+@api_login_required
+@api_roles_required("admin", "comercial")
 def api_clientes():
-    clientes = Usuario.query.all()
+    clientes = Usuario.query.filter_by(
+        perfil="cliente",
+        ativo=True
+    ).all()
+
     return jsonify([
         {
-            "id": c.id,
-            "nome": c.nome,
-            "email": c.email
+            "id": cliente.id,
+            "nome": cliente.nome,
+            "email": cliente.email
         }
-        for c in clientes
+        for cliente in clientes
     ])
 
 
-@app.route('/pedido/criar', methods=['POST'])
+@app.route("/pedido/criar", methods=["POST"])
+@api_login_required
+@api_roles_required("admin", "comercial")
 def criar_pedido():
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
 
-    cliente_nome = data.get("cliente_nome")
-    
-    if not cliente_nome and data.get("cliente_id"):
-        cliente_nome = f"Cliente ID {data.get('cliente_id')}"
-
+    cliente_id = data.get("cliente_id")
     itens = data.get("itens", [])
 
-    if not cliente_nome:
-        return jsonify({"error": "Nome do cliente é obrigatório"}), 400
-    if not itens:
-        return jsonify({"error": "Nenhum item no pedido"}), 400
+    if not cliente_id:
+        return jsonify({
+            "error": "Selecione um cliente cadastrado"
+        }), 400
 
-    usuario_responsavel = 1 
+    try:
+        cliente_id = int(cliente_id)
+    except (TypeError, ValueError):
+        return jsonify({
+            "error": "Cliente inválido"
+        }), 400
+
+    cliente = Usuario.query.filter_by(
+        id=cliente_id,
+        perfil="cliente",
+        ativo=True
+    ).first()
+
+    if not cliente:
+        return jsonify({
+            "error": "Cliente não encontrado ou inativo"
+        }), 404
+
+    if not itens:
+        return jsonify({
+            "error": "Nenhum item no pedido"
+        }), 400
+
+    usuario_responsavel = session["user_id"]
 
     try:
         pedido = Pedido(
-            cliente_nome=cliente_nome, 
-            cliente_contato=None,
+            cliente_nome=cliente.nome,
+            cliente_contato=cliente.email,
+            cliente_id=cliente.id,
             status="criado",
             total=0,
             criado_por=usuario_responsavel
@@ -426,27 +780,40 @@ def criar_pedido():
         for item in itens:
             variante_id = item.get("variante_id")
             quantidade = item.get("quantidade")
-            preco_unit = item.get("preco_unit")
 
-            if not variante_id or not quantidade:
+            try:
+                quantidade = int(quantidade)
+            except (TypeError, ValueError):
                 db.session.rollback()
-                return jsonify({"error": "Dados do item incompletos"}), 400
+                return jsonify({
+                    "error": "Quantidade inválida"
+                }), 400
 
-            quantidade = int(quantidade)
-            preco_unit = float(preco_unit)
-
-            estoque_registro = Estoque.query.filter_by(variante_id=variante_id).first()
-            
-            if not estoque_registro:
+            if not variante_id or quantidade <= 0:
                 db.session.rollback()
-                return jsonify({"error": f"Estoque não encontrado para o item {variante_id}"}), 400
+                return jsonify({
+                    "error": "Dados do item inválidos"
+                }), 400
 
-            if estoque_registro.quantidade < quantidade:
+            variante = Variante.query.filter_by(
+                id=variante_id,
+                ativo=True
+            ).first()
+
+            if not variante:
                 db.session.rollback()
-                return jsonify({"error": f"Estoque insuficiente. Disponível: {estoque_registro.quantidade}"}), 400
+                return jsonify({
+                    "error": "Produto ou variante não encontrada"
+                }), 404
 
-            estoque_registro.quantidade -= quantidade
-            db.session.add(estoque_registro)
+            preco_unit = variante.preco_base
+
+            registrar_saida_variante(
+                variante_id=variante_id,
+                quantidade=quantidade,
+                usuario_id=usuario_responsavel,
+                motivo=f"Venda do pedido #{pedido.id}"
+            )
 
             item_pedido = ItemPedido(
                 pedido_id=pedido.id,
@@ -455,8 +822,8 @@ def criar_pedido():
                 preco_unit=preco_unit,
                 valor_total=preco_unit * quantidade
             )
-            db.session.add(item_pedido)
 
+            db.session.add(item_pedido)
             total_geral += preco_unit * quantidade
 
         pedido.total = total_geral
@@ -465,14 +832,138 @@ def criar_pedido():
         return jsonify({
             "status": "ok",
             "pedido_id": pedido.id,
-            "total": total_geral
+            "total": float(total_geral)
         })
+
+    except ValueError as e:
+        db.session.rollback()
+
+        return jsonify({
+            "error": str(e)
+        }), 400
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": str(e)}), 500
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+@app.route("/api/meus_pedidos", methods=["GET"])
+@api_login_required
+@api_roles_required("cliente")
+def meus_pedidos_api():
+    pedidos = Pedido.query.filter_by(
+        cliente_id=session["user_id"]
+    ).order_by(
+        Pedido.created_at.desc()
+    ).all()
+
+    resultado = []
+
+    for pedido in pedidos:
+        itens = []
+
+        for item in pedido.itens:
+            variante = db.session.get(
+                Variante,
+                item.variante_id
+            )
+
+            nome_produto = "Produto indisponível"
+            sku = None
+
+            if variante:
+                sku = variante.sku
+
+                if variante.produto:
+                    nome_produto = (
+                        f"{variante.produto.linha} "
+                        f"{variante.produto.formato}"
+                    )
+
+            itens.append({
+                "sku": sku,
+                "produto": nome_produto,
+                "quantidade": int(item.quantidade),
+                "preco_unit": float(item.preco_unit),
+                "valor_total": float(item.valor_total)
+            })
+
+        resultado.append({
+            "id": pedido.id,
+            "status": pedido.status,
+            "total": float(pedido.total or 0),
+            "created_at": (
+                pedido.created_at.strftime("%d/%m/%Y %H:%M")
+                if pedido.created_at else None
+            ),
+            "itens": itens
+        })
+
+    return jsonify(resultado)
+
+@app.route("/pedido/<int:pedido_id>/status", methods=["PATCH"])
+@api_login_required
+@api_roles_required("admin", "comercial")
+def atualizar_status_pedido(pedido_id):
+    data = request.get_json(silent=True) or {}
+    novo_status = data.get("status")
+
+    status_permitidos = {
+        "criado",
+        "aprovado",
+        "em_producao",
+        "em_logistica",
+        "entregue",
+        "finalizado"
+    }
+
+    if novo_status not in status_permitidos:
+        return jsonify({
+            "status": "erro",
+            "mensagem": "Status de pedido inválido"
+        }), 400
+
+    pedido = db.session.get(Pedido, pedido_id)
+
+    if not pedido:
+        return jsonify({
+            "status": "erro",
+            "mensagem": "Pedido não encontrado"
+        }), 404
+
+    if pedido.status == "cancelado":
+        return jsonify({
+            "status": "erro",
+            "mensagem": (
+            "O status de um pedido cancelado "
+            "não pode ser alterado"
+        )
+    }), 400
+
+    try:
+        pedido.status = novo_status
+        db.session.commit()
+
+        return jsonify({
+            "status": "ok",
+            "mensagem": "Status atualizado com sucesso",
+            "pedido_id": pedido.id,
+            "novo_status": pedido.status
+        })
+
+    except Exception:
+        db.session.rollback()
+
+        return jsonify({
+            "status": "erro",
+            "mensagem": "Não foi possível atualizar o status"
+        }), 500
 
 @app.route('/pedido/listar', methods=['GET'])
+@api_login_required
+@api_roles_required("admin", "comercial")
 def listar_pedidos():
     """ Lista pedidos com itens e informações das variantes. """
     pedidos = Pedido.query.order_by(Pedido.created_at.desc()).limit(100).all()
@@ -481,7 +972,10 @@ def listar_pedidos():
     for p in pedidos:
         itens_processados = []
         for item in p.itens:
-            var = Variante.query.get(item.variante_id)
+            var = db.session.get(
+            Variante,
+            item.variante_id
+)
             itens_processados.append({
                 "variante_id": item.variante_id,
                 "sku": var.sku if var else None,
@@ -493,6 +987,7 @@ def listar_pedidos():
         resultado.append({
             "id": p.id,
             "cliente_nome": p.cliente_nome,
+            "status": p.status,
             "total": float(p.total or 0),
             "created_at": p.created_at.strftime("%Y-%m-%d %H:%M:%S") if p.created_at else None,
             "itens": itens_processados
@@ -501,9 +996,14 @@ def listar_pedidos():
     return jsonify(resultado)
 
 @app.route("/variante/excluir/<int:id>", methods=["DELETE"])
+@api_login_required
+@api_roles_required("admin")
 def excluir_variante(id):
     try:
-        variante = Variante.query.get(id)
+        variante = db.session.get(
+        Variante,
+        id
+)
         if not variante:
             return jsonify({"status": "erro", "mensagem": "Variante não encontrada"}), 404
         
@@ -520,18 +1020,195 @@ def excluir_variante(id):
         return jsonify({"status": "erro", "mensagem": str(e)}), 500
         
 
+@app.route("/api/dashboard/resumo")
+@api_login_required
+def api_dashboard_resumo():
+    perfil = session.get("user_perfil")
+    usuario_id = session["user_id"]
+
+    if perfil == "cliente":
+        pedidos = Pedido.query.filter_by(
+            cliente_id=usuario_id
+        ).all()
+
+        em_andamento = sum(
+        pedido.status not in {
+            "entregue",
+            "finalizado",
+            "cancelado"
+    }
+    for pedido in pedidos
+)
+
+        finalizados = sum(
+            pedido.status in {"entregue", "finalizado"}
+            for pedido in pedidos
+        )
+
+        total_gasto = sum(
+            float(pedido.total or 0)
+            for pedido in pedidos
+            if pedido.status != "cancelado"
+    )
+
+        cards = [
+            {
+                "titulo": "Meus pedidos",
+                "valor": len(pedidos),
+                "tipo": "numero"
+            },
+            {
+                "titulo": "Em andamento",
+                "valor": em_andamento,
+                "tipo": "numero"
+            },
+            {
+                "titulo": "Finalizados",
+                "valor": finalizados,
+                "tipo": "numero"
+            },
+            {
+                "titulo": "Total em pedidos",
+                "valor": total_gasto,
+                "tipo": "moeda"
+            }
+        ]
+
+    elif perfil == "estoque":
+        variantes = Variante.query.filter_by(
+            ativo=True
+        ).all()
+
+        estoques = [
+            variante.estoque
+            for variante in variantes
+            if variante.estoque
+        ]
+
+        total_unidades = sum(
+            estoque.quantidade
+            for estoque in estoques
+        )
+
+        estoque_baixo = sum(
+            estoque.quantidade <= estoque.minimo
+            for estoque in estoques
+        )
+
+        sem_estoque = sum(
+            estoque.quantidade == 0
+            for estoque in estoques
+        )
+
+        cards = [
+            {
+                "titulo": "Variantes ativas",
+                "valor": len(variantes),
+                "tipo": "numero"
+            },
+            {
+                "titulo": "Unidades em estoque",
+                "valor": total_unidades,
+                "tipo": "numero"
+            },
+            {
+                "titulo": "Estoque baixo",
+                "valor": estoque_baixo,
+                "tipo": "numero"
+            },
+            {
+                "titulo": "Sem estoque",
+                "valor": sem_estoque,
+                "tipo": "numero"
+            }
+        ]
+
+    elif perfil in {"admin", "comercial"}:
+        pedidos = Pedido.query.all()
+
+        pedidos_validos = [
+    pedido
+    for pedido in pedidos
+    if pedido.status != "cancelado"
+]
+
+        
+
+        total_vendido = sum(
+    float(pedido.total or 0)
+    for pedido in pedidos_validos
+)
+
+        total_clientes = Usuario.query.filter_by(
+            perfil="cliente",
+            ativo=True
+        ).count()
+
+        variantes = Variante.query.filter_by(
+            ativo=True
+        ).all()
+
+        estoque_baixo = sum(
+            variante.estoque is not None
+            and variante.estoque.quantidade <= variante.estoque.minimo
+            for variante in variantes
+        )
+
+        cards = [
+            {
+                "titulo": "Faturamento total",
+                "valor": total_vendido,
+                "tipo": "moeda"
+            },
+            {
+                "titulo": "Pedidos",
+                "valor": len(pedidos_validos),
+                "tipo": "numero"
+            },
+            {
+                "titulo": "Clientes ativos",
+                "valor": total_clientes,
+                "tipo": "numero"
+            },
+            {
+                "titulo": "Estoque baixo",
+                "valor": estoque_baixo,
+                "tipo": "numero"
+            }
+        ]
+
+    else:
+        return jsonify({
+            "status": "erro",
+            "mensagem": "Perfil inválido"
+        }), 403
+
+    return jsonify({
+        "perfil": perfil,
+        "cards": cards
+    })
+
 @app.route("/api/atividades_recentes")
+@api_login_required
+@api_roles_required("admin", "comercial", "estoque")
 def api_atividades_recentes():
     atividades = []
 
     # Vendas
-    ultimos_pedidos = Pedido.query.order_by(Pedido.created_at.desc()).limit(50).all()
+    ultimos_pedidos = Pedido.query.filter(
+    Pedido.status != "cancelado"
+).order_by(
+    Pedido.created_at.desc()
+).limit(50).all()
     for p in ultimos_pedidos:
         qtd_total = sum([i.quantidade for i in p.itens])
         nome_exemplo = "Produtos diversos"
         if p.itens:
             primeiro_item = p.itens[0]
-            var = Variante.query.get(primeiro_item.variante_id)
+            var = db.session.get(
+    Variante,
+    primeiro_item.variante_id
+)
             if var and var.produto:
                 nome_exemplo = f"{var.produto.linha}"
             else:
@@ -551,7 +1228,10 @@ def api_atividades_recentes():
     ultimos_produtos = Variante.query.filter_by(ativo=True).order_by(Variante.created_at.desc()).limit(50).all()
     for v in ultimos_produtos:
         nome_prod = "Produto"
-        prod = Produto.query.get(v.produto_id)
+        prod = db.session.get(
+        Produto,
+        v.produto_id
+)
         if prod:
             nome_prod = f"{prod.linha} {prod.formato}"
         
@@ -572,42 +1252,66 @@ def api_atividades_recentes():
     atividades.sort(key=lambda x: x['data'], reverse=True)
     return jsonify(atividades[:50])
 
+@app.route("/pedido/<int:pedido_id>/cancelar", methods=["PATCH"])
+@api_login_required
+@api_roles_required("admin", "comercial")
+def cancelar_pedido(pedido_id):
+    pedido = db.session.get(Pedido, pedido_id)
 
-@app.route("/pedido/excluir/<int:id>", methods=["DELETE"])
-def excluir_pedido(id):
-    try:
-        pedido = Pedido.query.get(id)
-        if not pedido:
-            return jsonify({"status": "erro", "mensagem": "Pedido não encontrado"}), 404
-        
-        ItemPedido.query.filter_by(pedido_id=id).delete()
-        
-        db.session.delete(pedido)
-        db.session.commit()
-        
-        return jsonify({"status": "ok", "mensagem": "Venda excluída do histórico!"})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"status": "erro", "mensagem": str(e)}), 500
-
-@app.route("/admin/limpar_todas_vendas")
-def limpar_todas_vendas():
-    try:
-        num_itens = db.session.query(ItemPedido).delete()
-        num_pedidos = db.session.query(Pedido).delete()
-        db.session.commit()
-        
+    if not pedido:
         return jsonify({
-            "status": "ok", 
-            "mensagem": f"Limpeza concluída! {num_pedidos} pedidos e {num_itens} itens foram apagados."
+            "status": "erro",
+            "mensagem": "Pedido não encontrado"
+        }), 404
+
+    if pedido.status == "cancelado":
+        return jsonify({
+            "status": "erro",
+            "mensagem": "Este pedido já está cancelado"
+        }), 400
+
+    if pedido.status in {"entregue", "finalizado"}:
+        return jsonify({
+            "status": "erro",
+            "mensagem": (
+                "Pedidos entregues ou finalizados "
+                "não podem ser cancelados"
+            )
+        }), 400
+
+    try:
+        for item in pedido.itens:
+            registrar_entrada_variante(
+                variante_id=item.variante_id,
+                quantidade=int(item.quantidade),
+                usuario_id=session["user_id"],
+                motivo=f"Cancelamento do pedido #{pedido.id}"
+            )
+
+        pedido.status = "cancelado"
+        db.session.commit()
+
+        return jsonify({
+            "status": "ok",
+            "mensagem": (
+                "Pedido cancelado e produtos "
+                "devolvidos ao estoque"
+            ),
+            "pedido_id": pedido.id
         })
+
     except Exception as e:
         db.session.rollback()
-        return jsonify({"status": "erro", "mensagem": str(e)}), 500
+
+        return jsonify({
+            "status": "erro",
+            "mensagem": str(e)
+        }), 500
 
 
 # -------------------
 # Run
 # -------------------
 if __name__ == "__main__":
-    app.run(debug=True)
+    debug_ativo = os.getenv("FLASK_DEBUG", "false").lower() == "true"
+    app.run(debug=debug_ativo)

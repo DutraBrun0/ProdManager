@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Meus pedidos - ProdManager</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='base.css') }}"
+    >
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='components.css') }}"
+    >
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='cliente.css') }}"
+    >
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='menu.css') }}"
+    >
+</head>
+
+<body>
+
+<header class="app-header">
+    <h1>
+        <a
+            href="{{ url_for('inicio_page') }}"
+            class="app-brand"
+        >
+            ProdManager
+        </a>
+    </h1>
+
+    {% include "_menu.html" %}
+</header>
+
+<main class="app-main">
+
+    <div class="page-heading">
+        <div class="page-heading-content">
+            <span class="page-eyebrow">Área do cliente</span>
+
+            <h2 class="page-title">Meus pedidos</h2>
+
+            <p class="page-description">
+                Acompanhe o andamento e consulte os detalhes
+                dos seus pedidos.
+            </p>
+        </div>
+    </div>
+
+    <section class="metric-grid">
+        <article class="metric-card">
+            <span class="metric-label">Total de pedidos</span>
+            <strong
+                class="metric-value"
+                id="total-pedidos"
+            >
+                0
+            </strong>
+        </article>
+
+        <article class="metric-card">
+            <span class="metric-label">Em andamento</span>
+            <strong
+                class="metric-value"
+                id="pedidos-andamento"
+            >
+                0
+            </strong>
+        </article>
+
+        <article class="metric-card">
+            <span class="metric-label">Concluídos</span>
+            <strong
+                class="metric-value"
+                id="pedidos-concluidos"
+            >
+                0
+            </strong>
+        </article>
+
+        <article class="metric-card">
+            <span class="metric-label">Valor total</span>
+            <strong
+                class="metric-value"
+                id="valor-total"
+            >
+                R$ 0,00
+            </strong>
+        </article>
+    </section>
+
+    <section class="panel">
+        <div class="panel-header">
+            <div>
+                <h3 class="panel-title">Histórico de pedidos</h3>
+
+                <p class="panel-description">
+                    Os pedidos mais recentes aparecem primeiro.
+                </p>
+            </div>
+        </div>
+
+        <div class="panel-body">
+            <div
+                id="lista-pedidos"
+                class="orders-list"
+            >
+                <div class="state-message">
+                    Carregando seus pedidos...
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<script>
+const nomesStatus = {
+    criado: "Criado",
+    aprovado: "Aprovado",
+    em_producao: "Em produção",
+    em_logistica: "Em logística",
+    entregue: "Entregue",
+    finalizado: "Finalizado",
+    cancelado: "Cancelado"
+};
+
+const classesStatus = {
+    criado: "badge-neutral",
+    aprovado: "badge-primary",
+    em_producao: "badge-warning",
+    em_logistica: "badge-primary",
+    entregue: "badge-success",
+    finalizado: "badge-success",
+    cancelado: "badge-danger"
+};
+
+function formatarMoeda(valor) {
+    return Number(valor || 0).toLocaleString(
+        "pt-BR",
+        {
+            style: "currency",
+            currency: "BRL"
+        }
+    );
+}
+
+function formatarData(data) {
+    if (!data) {
+        return "Data não informada";
+    }
+
+    const dataNormalizada = data.includes("T")
+        ? data
+        : data.replace(" ", "T");
+
+    const objetoData = new Date(dataNormalizada);
+
+    if (Number.isNaN(objetoData.getTime())) {
+        return data;
+    }
+
+    return objetoData.toLocaleString(
+        "pt-BR",
+        {
+            dateStyle: "short",
+            timeStyle: "short"
+        }
+    );
+}
+
+function atualizarIndicadores(pedidos) {
+    const cancelados = pedidos.filter(
+        pedido => pedido.status === "cancelado"
+    );
+
+    const validos = pedidos.filter(
+        pedido => pedido.status !== "cancelado"
+    );
+
+    const concluidos = validos.filter(
+        pedido =>
+            pedido.status === "entregue" ||
+            pedido.status === "finalizado"
+    );
+
+    const andamento = validos.filter(
+        pedido =>
+            pedido.status !== "entregue" &&
+            pedido.status !== "finalizado"
+    );
+
+    const valorTotal = validos.reduce(
+        (total, pedido) =>
+            total + Number(pedido.total || 0),
+        0
+    );
+
+    document.getElementById("total-pedidos").textContent =
+        pedidos.length;
+
+    document.getElementById("pedidos-andamento").textContent =
+        andamento.length;
+
+    document.getElementById("pedidos-concluidos").textContent =
+        concluidos.length;
+
+    document.getElementById("valor-total").textContent =
+        formatarMoeda(valorTotal);
+}
+
+function montarItensPedido(itens) {
+    if (!Array.isArray(itens) || itens.length === 0) {
+        return `
+            <p class="order-empty-items">
+                Nenhum produto informado neste pedido.
+            </p>
+        `;
+    }
+
+    return itens.map(item => {
+        const produto =
+            item.produto ||
+            item.nome_produto ||
+            item.sku ||
+            "Produto";
+
+        const quantidade = Number(item.quantidade || 0);
+
+        return `
+            <div class="order-product">
+                <div>
+                    <strong class="order-product-name">
+                        ${produto}
+                    </strong>
+
+                    ${
+                        item.sku
+                            ? `
+                                <span class="order-product-sku">
+                                    SKU: ${item.sku}
+                                </span>
+                            `
+                            : ""
+                    }
+                </div>
+
+                <span class="order-product-quantity">
+                    ${quantidade} ${quantidade === 1 ? "unidade" : "unidades"}
+                </span>
+            </div>
+        `;
+    }).join("");
+}
+
+function criarCardPedido(pedido) {
+    const artigo = document.createElement("article");
+
+    artigo.className = "order-card";
+
+    const status = pedido.status || "criado";
+
+    const nomeStatus =
+        nomesStatus[status] || status;
+
+    const classeStatus =
+        classesStatus[status] || "badge-neutral";
+
+    artigo.innerHTML = `
+        <div class="order-card-header">
+            <div>
+                <span class="order-number">
+                    Pedido #${pedido.id}
+                </span>
+
+                <span class="order-date">
+                    ${formatarData(pedido.created_at)}
+                </span>
+            </div>
+
+            <span class="badge ${classeStatus}">
+                ${nomeStatus}
+            </span>
+        </div>
+
+        <div class="order-card-body">
+            <div class="order-products">
+                ${montarItensPedido(pedido.itens)}
+            </div>
+        </div>
+
+        <div class="order-card-footer">
+            <span class="order-total-label">
+                Total do pedido
+            </span>
+
+            <strong class="order-total-value">
+                ${formatarMoeda(pedido.total)}
+            </strong>
+        </div>
+    `;
+
+    return artigo;
+}
+
+async function carregarMeusPedidos() {
+    const lista = document.getElementById("lista-pedidos");
+
+    try {
+        const resposta = await fetch("/api/meus_pedidos");
+
+        const pedidos = await resposta.json();
+
+        if (!resposta.ok) {
+            throw new Error(
+                pedidos.mensagem ||
+                "Erro ao carregar seus pedidos"
+            );
+        }
+
+        lista.innerHTML = "";
+
+        atualizarIndicadores(pedidos);
+
+        if (pedidos.length === 0) {
+            lista.innerHTML = `
+                <div class="empty-state">
+                    <h3>Nenhum pedido encontrado</h3>
+
+                    <p>
+                        Quando um pedido for registrado para sua
+                        conta, ele aparecerá aqui.
+                    </p>
+
+                    <a
+                        href="{{ url_for('catalogo_cliente_page') }}"
+                        class="button button-primary"
+                    >
+                        Ver catálogo
+                    </a>
+                </div>
+            `;
+
+            return;
+        }
+
+        pedidos.forEach(pedido => {
+            lista.appendChild(
+                criarCardPedido(pedido)
+            );
+        });
+
+    } catch (erro) {
+        lista.innerHTML = `
+            <div class="alert alert-danger">
+                ${erro.message}
+            </div>
+        `;
+    }
+}
+
+carregarMeusPedidos();
+</script>
+
+</body>
+</html>

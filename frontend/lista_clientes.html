@@ -1,74 +1,229 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-<meta charset="UTF-8">
-<title>Lista de Clientes - Mev Glass OS</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Clientes - ProdManager</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='base.css') }}"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='components.css') }}"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='menu.css') }}"
+    >
 </head>
+
 <body>
-<header>
-<h1><a href="{{ url_for('inicio_page') }}">prodmanager</a></h1>
-  <nav>
-    <a href="{{ url_for('produtos_page') }}">Produtos</a>
-    <a href="{{ url_for('clientes_page') }}">Cadastrar Cliente</a>
-    <a href="{{ url_for('estoque_page') }}">Estoque</a>
-    <a href="{{ url_for('faturamento_page') }}">Faturamento</a>
-  </nav>
+
+<header class="app-header">
+    <h1>
+        <a
+            href="{{ url_for('inicio_page') }}"
+            class="app-brand"
+        >
+            prodmanager
+        </a>
+    </h1>
+
+    {% include "_menu.html" %}
 </header>
 
-<main>
-  <section>
-    <h2>Clientes Cadastrados</h2>
-    <table id="clientes-table">
-      <thead><tr><th>Nome</th><th>Email</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </section>
+<main class="app-main">
+
+    <div class="page-heading">
+        <div class="page-heading-content">
+            <span class="page-eyebrow">
+                Relacionamento
+            </span>
+
+            <h2 class="page-title">
+                Clientes cadastrados
+            </h2>
+
+            <p class="page-description">
+                Consulte as contas de clientes registradas
+                e disponíveis para novos pedidos.
+            </p>
+        </div>
+
+        <a
+            href="{{ url_for('clientes_page') }}"
+            class="button button-primary"
+        >
+            Novo cliente
+        </a>
+    </div>
+
+    <section class="panel">
+        <div class="panel-header">
+            <div>
+                <h3 class="panel-title">
+                 clientes
+                </h3>
+
+                <p class="panel-description">
+                    Dados carregados diretamente do banco.
+                </p>
+            </div>
+
+            <span
+                id="total-clientes"
+                class="badge badge-primary"
+            >
+                0 clientes
+            </span>
+        </div>
+
+        <div class="panel-body">
+            <div class="table-container">
+                <div class="table-scroll">
+                    <table
+                        id="clientes-table"
+                        class="data-table"
+                    >
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>E-mail</th>
+                                <th>Situação</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            <tr>
+                                <td
+                                    colspan="4"
+                                    class="state-message"
+                                >
+                                    Carregando clientes...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
 </main>
 
 <script>
-  let clientes = JSON.parse(localStorage.getItem('clientes') || '[]');
+async function carregarClientes() {
+    const tbody = document.querySelector(
+        "#clientes-table tbody"
+    );
 
-  function updateClientesTable() {
-    const tbody = document.querySelector('#clientes-table tbody');
-    tbody.innerHTML = '';
+    const totalClientes = document.getElementById(
+        "total-clientes"
+    );
 
-    clientes.forEach((c, index) => {
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td>${c.nome}</td>
-        <td>${c.email}</td>
-      `;
+    try {
+        const resposta = await fetch("/api/clientes");
+        const clientes = await resposta.json();
 
-      // Evento de duplo clique para exclusão
-      row.addEventListener('dblclick', () => {
-        if (confirm(`Deseja excluir o cliente "${c.nome}"?`)) {
-          excluirCliente(index);
+        if (!resposta.ok) {
+            throw new Error(
+                clientes.mensagem ||
+                "Não foi possível carregar os clientes"
+            );
         }
-      });
 
-      tbody.appendChild(row);
-    });
+        tbody.innerHTML = "";
 
-    localStorage.setItem('clientes', JSON.stringify(clientes));
-  }
+        totalClientes.textContent =
+            `${clientes.length} ${
+                clientes.length === 1
+                    ? "cliente"
+                    : "clientes"
+            }`;
 
-  function excluirCliente(index) {
-    // Remove vendas relacionadas
-    let faturamentos = JSON.parse(localStorage.getItem('faturamentos') || '[]');
-    faturamentos = faturamentos.filter(f => f.cliente !== index);
+        if (clientes.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="4">
+                        <div class="empty-state">
+                            <h3 class="empty-state-title">
+                                Nenhum cliente cadastrado
+                            </h3>
 
-    faturamentos = faturamentos.map(f => {
-      if (f.cliente > index) f.cliente -= 1;
-      return f;
-    });
+                            <p class="empty-state-text">
+                                Cadastre um cliente para
+                                começar a criar pedidos.
+                            </p>
+                        </div>
+                    </td>
+                </tr>
+            `;
 
-    localStorage.setItem('faturamentos', JSON.stringify(faturamentos));
-    clientes.splice(index, 1);
-    updateClientesTable();
-  }
+            return;
+        }
 
-  updateClientesTable();
+        clientes.forEach(cliente => {
+            const linha = document.createElement("tr");
+
+            const colunaId = document.createElement("td");
+            colunaId.textContent = `#${cliente.id}`;
+
+            const colunaNome = document.createElement("td");
+            colunaNome.className = "table-primary-text";
+            colunaNome.textContent = cliente.nome;
+
+            const colunaEmail = document.createElement("td");
+            colunaEmail.textContent = cliente.email;
+
+            const colunaSituacao =
+                document.createElement("td");
+
+            colunaSituacao.innerHTML = `
+                <span class="badge badge-success">
+                    Ativo
+                </span>
+            `;
+
+            linha.appendChild(colunaId);
+            linha.appendChild(colunaNome);
+            linha.appendChild(colunaEmail);
+            linha.appendChild(colunaSituacao);
+
+            tbody.appendChild(linha);
+        });
+
+    } catch (erro) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4">
+                    <div class="empty-state">
+                        <h3 class="empty-state-title">
+                            Erro ao carregar
+                        </h3>
+
+                        <p class="empty-state-text">
+                            ${erro.message}
+                        </p>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+}
+
+carregarClientes();
 </script>
+
 </body>
 </html>

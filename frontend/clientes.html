@@ -1,170 +1,325 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-<meta charset="UTF-8">
-<title>Clientes - Mev Glass OS</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-<style>
-    /* --- ESTILO CLEAN & SUAVE (PADRÃO MEV GLASS) --- */
-    :root {
-        --bg-body: #f8fafc;
-        --bg-card: #ffffff;
-        --input-bg: #ffffff;
-        --border-subtle: #e2e8f0;
-        --text-main: #334155;
-        --text-muted: #64748b;
-        --primary: #0f172a; 
-        --blue-btn: #3b82f6;
-        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-    }
+    <meta charset="UTF-8">
 
-    body {
-        background-color: var(--bg-body);
-        color: var(--text-main);
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        margin: 0;
-        padding-bottom: 60px;
-    }
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-    /* Header */
-    header {
-        background: var(--bg-card);
-        border-bottom: 1px solid var(--border-subtle);
-        padding: 15px 20px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-    header h1 a { color: var(--primary); text-decoration: none; font-weight: 700; font-size: 1.2rem; }
-    nav a { color: var(--text-muted); text-decoration: none; margin-left: 20px; font-size: 0.9rem; transition: 0.2s; }
-    nav a:hover { color: var(--primary); }
+    <title>Novo cliente - ProdManager</title>
 
-    /* Layout Styles */
-    main { max-width: 600px; margin: 60px auto; padding: 0 20px; } /* Mais estreito para formulário simples */
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='base.css') }}"
+    >
 
-    /* Card Principal */
-    .card {
-        background: var(--bg-card);
-        padding: 40px;
-        border-radius: 16px;
-        box-shadow: var(--shadow-md);
-        border: 1px solid var(--border-subtle);
-    }
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='components.css') }}"
+    >
 
-    .page-header { margin-bottom: 30px; text-align: center; }
-    h2 { font-weight: 600; color: var(--primary); margin: 0 0 10px 0; font-size: 1.6rem; }
-    .subtitle { color: var(--text-muted); font-size: 0.95rem; }
-
-    /* Inputs */
-    .form-group { margin-bottom: 20px; }
-    
-    label {
-        display: block;
-        font-size: 0.9rem;
-        font-weight: 500;
-        margin-bottom: 8px;
-        color: var(--text-main);
-    }
-
-    input {
-        width: 100%;
-        padding: 14px 16px;
-        background-color: var(--bg-body);
-        border: 1px solid var(--border-subtle);
-        border-radius: 8px;
-        color: var(--text-main);
-        font-size: 0.95rem;
-        transition: all 0.2s ease;
-        box-sizing: border-box;
-    }
-    input:focus {
-        background-color: #fff;
-        border-color: var(--blue-btn);
-        outline: none;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-
-    /* Botão */
-    button[type="submit"] {
-        background-color: var(--primary);
-        color: white;
-        width: 100%;
-        padding: 16px;
-        font-size: 1rem;
-        font-weight: 600;
-        border-radius: 8px;
-        border: none;
-        margin-top: 10px;
-        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
-        cursor: pointer;
-        transition: transform 0.1s, background-color 0.2s;
-    }
-    button[type="submit"]:hover {
-        background-color: #1e293b;
-        transform: translateY(-1px);
-    }
-
-</style>
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='menu.css') }}"
+    >
 </head>
+
 <body>
 
-<header>
-    <h1><a href="{{ url_for('inicio_page') }}">prodmanager</a></h1>
-    <nav>
-        <a href="{{ url_for('produtos_page') }}">Produtos</a>
-        <a href="{{ url_for('clientes_page') }}">Clientes</a>
-        <a href="{{url_for('lista_cliente_page')}}">Lista Clientes</a>
-        <a href="{{ url_for('estoque_page') }}">Estoque</a>
-        <a href="{{ url_for('faturamento_page') }}">Faturamento</a>
-    </nav>
+<header class="app-header">
+    <h1>
+        <a
+            href="{{ url_for('inicio_page') }}"
+            class="app-brand"
+        >
+            prodmanager
+        </a>
+    </h1>
+
+    {% include "_menu.html" %}
 </header>
 
-<main>
-    <div class="card">
-        <div class="page-header">
-            <h2>Cadastro de Clientes</h2>
-            <span class="subtitle">Registre seus clientes para agilizar os pedidos.</span>
+<main class="app-main">
+
+    <div class="page-heading">
+        <div class="page-heading-content">
+            <span class="page-eyebrow">
+                Relacionamento
+            </span>
+
+            <h2 class="page-title">
+                Cadastrar cliente
+            </h2>
+
+            <p class="page-description">
+                Crie uma conta para que o cliente possa
+                consultar o catálogo e acompanhar pedidos.
+            </p>
         </div>
 
-        <form id="cliente-form">
-            <div class="form-group">
-                <label for="cliente-nome">Nome Completo</label>
-                <input type="text" id="cliente-nome">
-            </div>
-            
-            <div class="form-group">
-                <label for="cliente-email">E-mail</label>
-                <input type="email" id="cliente-email" placeholder="cliente@email.com" required>
-            </div>
-            
-            <button type="submit">Cadastrar Cliente</button>
-        </form>
+        <a
+            href="{{ url_for('lista_cliente_page') }}"
+            class="button button-secondary"
+        >
+            Voltar para clientes
+        </a>
     </div>
+
+    <div class="content-grid content-grid-sidebar">
+
+        <aside class="panel">
+            <div class="panel-header">
+                <div>
+                    <h3 class="panel-title">
+                        Conta do cliente
+                    </h3>
+
+                    <p class="panel-description">
+                        Informações importantes antes
+                        do cadastro.
+                    </p>
+                </div>
+            </div>
+
+            <div class="panel-body">
+                <div class="alert alert-success">
+                    O cliente será criado com o perfil
+                    correto automaticamente.
+                </div>
+
+                <p class="page-description">
+                    A senha informada será temporária.
+                    Oriente o cliente a utilizar esse e-mail
+                    e essa senha para entrar no sistema.
+                </p>
+
+                <p class="page-description">
+                    Contas com e-mails já cadastrados não
+                    poderão ser registradas novamente.
+                </p>
+            </div>
+        </aside>
+
+        <section class="panel">
+            <div class="panel-header">
+                <div>
+                    <h3 class="panel-title">
+                        Dados de acesso
+                    </h3>
+
+                    <p class="panel-description">
+                        Preencha todos os campos abaixo.
+                    </p>
+                </div>
+            </div>
+
+            <div class="panel-body">
+                <form
+                    id="cliente-form"
+                    class="form-stack"
+                >
+                    <div
+                        id="form-message"
+                        class="alert"
+                        hidden
+                    ></div>
+
+                    <div class="form-field">
+                        <label
+                            for="cliente-nome"
+                            class="form-label"
+                        >
+                            Nome completo
+                        </label>
+
+                        <input
+                            type="text"
+                            id="cliente-nome"
+                            class="form-control"
+                            placeholder="Nome do cliente"
+                            autocomplete="name"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-field">
+                        <label
+                            for="cliente-email"
+                            class="form-label"
+                        >
+                            E-mail
+                        </label>
+
+                        <input
+                            type="email"
+                            id="cliente-email"
+                            class="form-control"
+                            placeholder="cliente@email.com"
+                            autocomplete="email"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-field">
+                            <label
+                                for="cliente-senha"
+                                class="form-label"
+                            >
+                                Senha temporária
+                            </label>
+
+                            <input
+                                type="password"
+                                id="cliente-senha"
+                                class="form-control"
+                                placeholder="Mínimo de 8 caracteres"
+                                minlength="8"
+                                autocomplete="new-password"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-field">
+                            <label
+                                for="cliente-confirmar-senha"
+                                class="form-label"
+                            >
+                                Confirmar senha
+                            </label>
+
+                            <input
+                                type="password"
+                                id="cliente-confirmar-senha"
+                                class="form-control"
+                                placeholder="Repita a senha"
+                                minlength="8"
+                                autocomplete="new-password"
+                                required
+                            >
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <a
+                            href="{{ url_for('lista_cliente_page') }}"
+                            class="button button-secondary"
+                        >
+                            Cancelar
+                        </a>
+
+                        <button
+                            type="submit"
+                            class="button button-primary"
+                        >
+                            Cadastrar cliente
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+    </div>
+
 </main>
 
 <script>
-  // Lógica original mantida (LocalStorage)
-  let clientes = JSON.parse(localStorage.getItem('clientes') || '[]');
+const formulario = document.getElementById("cliente-form");
 
-  document.getElementById('cliente-form').addEventListener('submit', e => {
-    e.preventDefault();
+const botao = formulario.querySelector(
+    'button[type="submit"]'
+);
 
-    const nome = document.getElementById('cliente-nome').value.trim();
-    const email = document.getElementById('cliente-email').value.trim();
+const mensagem = document.getElementById(
+    "form-message"
+);
 
-    if (!nome || !email) {
-      alert("Preencha todos os campos corretamente.");
-      return;
+function mostrarMensagem(texto, sucesso) {
+    mensagem.hidden = false;
+
+    mensagem.className = sucesso
+        ? "alert alert-success"
+        : "alert alert-danger";
+
+    mensagem.textContent = texto;
+}
+
+formulario.addEventListener("submit", async evento => {
+    evento.preventDefault();
+
+    mensagem.hidden = true;
+
+    const nome = document
+        .getElementById("cliente-nome")
+        .value
+        .trim();
+
+    const email = document
+        .getElementById("cliente-email")
+        .value
+        .trim();
+
+    const senha = document
+        .getElementById("cliente-senha")
+        .value;
+
+    const confirmarSenha = document
+        .getElementById("cliente-confirmar-senha")
+        .value;
+
+    if (senha !== confirmarSenha) {
+        mostrarMensagem(
+            "As senhas informadas não coincidem.",
+            false
+        );
+
+        return;
     }
 
-    clientes.push({ nome, email });
-    localStorage.setItem('clientes', JSON.stringify(clientes));
+    botao.disabled = true;
+    botao.textContent = "Cadastrando...";
 
-    // Alerta estilizado (simples)
-    alert(`✅ Cliente "${nome}" cadastrado com sucesso!`);
+    try {
+        const resposta = await fetch(
+            "/api/clientes/cadastrar",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    nome: nome,
+                    email: email,
+                    senha: senha
+                })
+            }
+        );
 
-    e.target.reset();
-  });
+        const resultado = await resposta.json();
+
+        mostrarMensagem(
+            resultado.mensagem,
+            resposta.ok
+        );
+
+        if (resposta.ok) {
+            formulario.reset();
+        }
+
+    } catch (erro) {
+        mostrarMensagem(
+            "Não foi possível conectar ao servidor.",
+            false
+        );
+
+    } finally {
+        botao.disabled = false;
+        botao.textContent = "Cadastrar cliente";
+    }
+});
 </script>
 
 </body>

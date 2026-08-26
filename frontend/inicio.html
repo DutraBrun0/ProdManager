@@ -1,272 +1,510 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard - Mev Glass OS</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='inicio.css') }}">
-    <style>
-        /* CSS Extra para os ícones e botão ver mais */
-        .feed-item {
-            display: flex;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid #eee;
-            transition: background 0.2s;
-        }
-        .feed-icon {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            margin-right: 12px;
-            flex-shrink: 0;
-        }
-        .bg-venda { background-color: #d4edda; color: #155724; }
-        .bg-cadastro { background-color: #cce5ff; color: #004085; }
-        .feed-info { display: flex; flex-direction: column; }
-        .feed-title { font-weight: bold; font-size: 0.9rem; }
-        .feed-desc { font-size: 0.85rem; color: #555; }
-        .feed-date { font-size: 0.75rem; color: #999; }
 
-        /* Botão Ver Mais */
-        .btn-ver-mais {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            text-align: center;
-            background: #f8f9fa;
-            border: 1px solid #ddd;
-            color: #555;
-            border-radius: 0 0 8px 8px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            margin-top: 5px;
-            transition: background 0.2s;
-        }
-        .btn-ver-mais:hover {
-            background: #e2e6ea;
-            color: #333;
-        }
-        .hidden-item {
-            display: none; /* Classe para esconder os itens extras */
-        }
-    </style>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Dashboard - ProdManager</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='base.css') }}"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='components.css') }}"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='dashboard.css') }}"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='menu.css') }}"
+    >
 </head>
+
 <body>
-<header>
-    <h1>prodmanager</h1>
+
+{% set perfil = session.get("user_perfil") %}
+
+<header class="app-header">
+    <h1>
+        <a
+            href="{{ url_for('inicio_page') }}"
+            class="app-brand"
+        >
+            prodmanager
+        </a>
+    </h1>
+
+    {% include "_menu.html" %}
 </header>
 
-<main>
-    <section>
-        <h2 id="welcome-message">Bem-vindo(a) de volta!</h2>
-        <div class="action-hub">
-            <a href="{{ url_for('faturamento_page') }}" class="action-card">
-                <span>Nova Venda</span>
-            </a>
-            <a href="{{ url_for('produtos_page') }}" class="action-card">
-                <span>Adicionar Produto</span>
-            </a>
-            <a href="{{ url_for('estoque_page') }}" class="action-card">
-                <span>Ver Estoque</span>
-            </a>
-            <a href="{{ url_for('clientes_page') }}" class="action-card">
-                <span>Novo Cliente</span>
-            </a>
+<main class="app-main">
+
+    <section class="dashboard-hero">
+        <div class="dashboard-hero-content">
+            <span class="dashboard-eyebrow">
+                Painel de controle
+            </span>
+
+            <h2 class="dashboard-title">
+                Olá, {{ nome_usuario }}!
+            </h2>
+
+            <p class="dashboard-description">
+                Acompanhe as principais informações do sistema
+                de forma rápida e organizada.
+            </p>
+        </div>
+
+        <span class="dashboard-role">
+            {{ perfil|capitalize }}
+        </span>
+    </section>
+
+    <section
+    class="dashboard-summary"
+    aria-labelledby="titulo-resumo"
+>
+        <h2 id="titulo-resumo" class="visually-hidden">
+            Visão geral
+        </h2>
+
+        <div id="resumo-cards" class="metrics-grid">
+            <p class="state-message">
+                Carregando indicadores...
+            </p>
         </div>
     </section>
 
-    <div class="dashboard-columns">
-        <section>
-            <h2>Status do Estoque</h2>
-            <div id="stock-status-list">
-                <p>Carregando estoque...</p>
-            </div>
-        </section>
+   {% if perfil != "cliente" %}
 
-        <section>
-            <h2>Atividade Recente</h2>
-            <ul class="activity-feed" id="activity-feed">
-                <li>Carregando atividades...</li>
+<div
+    class="dashboard-sections"
+    id="dashboard-operacional"
+>
+    <section class="panel">
+        <div class="panel-header">
+            <div>
+                <span class="page-eyebrow">
+                    Monitoramento
+                </span>
+
+                <h2 class="panel-title">
+                    Estoque em atenção
+                </h2>
+
+                <p class="panel-description">
+                    Itens organizados por prioridade
+                    de reposição.
+                </p>
+            </div>
+        </div>
+
+        <div class="dashboard-panel-body">
+            <div
+                id="stock-status-list"
+                class="stock-overview-list"
+            >
+                <p class="state-message">
+                    Carregando estoque...
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-header">
+            <div>
+                <span class="page-eyebrow">
+                    Histórico
+                </span>
+
+                <h2 class="panel-title">
+                    Atividades recentes
+                </h2>
+
+                <p class="panel-description">
+                    Ações mais recentes realizadas
+                    no sistema.
+                </p>
+            </div>
+        </div>
+
+        <div class="dashboard-panel-body">
+            <ul
+                class="activity-list"
+                id="activity-feed"
+            >
+                <li class="state-message">
+                    Carregando atividades...
+                </li>
             </ul>
-            <button id="btn-load-more" class="btn-ver-mais" style="display: none;">
+
+            <button
+                type="button"
+                id="btn-load-more"
+                class="
+                    button
+                    button-secondary
+                    button-block
+                    dashboard-more-button
+                "
+                hidden
+            >
                 Ver todas as atividades
             </button>
-        </section>
-    </div>
+        </div>
+    </section>
+</div>
+
+{% endif %}
+
 </main>
-
-<script>
-document.addEventListener('DOMContentLoaded', async () => {
-    // Função utilitária
-    async function safeFetchJson(url, opts) {
-        try {
-            const r = await fetch(url, opts);
-            if (!r.ok) throw new Error(`HTTP ${r.status}`);
-            return await r.json();
-        } catch (err) {
-            console.warn("fetch error", url, err);
-            return { __error: true, message: err.message || String(err) };
-        }
-    }
-
-    // ==========================================
-    // 1) Carregar Estoque (Lógica Original)
-    // ==========================================
-    const stockData = await safeFetchJson('/estoque/variantes');
-    const stockListContainer = document.getElementById('stock-status-list');
-    stockListContainer.innerHTML = '';
-
-    if (stockData && !stockData.__error && Array.isArray(stockData) && stockData.length) {
-        const sorted = stockData.slice().sort((a,b) => (a.estoque||0) - (b.estoque||0)).slice(0,5);
-        sorted.forEach(v => {
-            const target = v.minimo || 20;
-            const percentage = Math.min(((v.estoque || 0) / target) * 100, 100);
-            let statusClass = 'high';
-            if (percentage < 25) statusClass = 'low';
-            else if (percentage < 60) statusClass = 'medium';
-
-            const div = document.createElement('div');
-            div.className = 'stock-item';
-            div.innerHTML = `
-                <div class="stock-item-info">
-                    <span>${v.nome_produto}</span>
-                    <strong>${v.estoque || 0} Unid.</strong>
-                </div>
-                <div class="progress-bar" style="border:1px solid #ddd; height:10px; border-radius:6px; background:#f5f5f5;">
-                    <div style="height:100%; width:${percentage}%; background:${statusClass === 'low' ? '#e74c3c' : statusClass === 'medium' ? '#f1c40f' : '#2ecc71'}; border-radius:6px"></div>
-                </div>
-            `;
-            stockListContainer.appendChild(div);
-        });
-    } else {
-        stockListContainer.innerHTML = '<p>Estoque vazio ou erro ao carregar.</p>';
-    }
-
-    // ==========================================
-    // 2) Atividade Recente (COM BOTÃO VER MAIS)
-    // ==========================================
-    const activityContainer = document.getElementById('activity-feed');
-    const loadMoreBtn = document.getElementById('btn-load-more');
-    activityContainer.innerHTML = '';
-
-    const atividades = await safeFetchJson('/api/atividades_recentes');
-    
-    if (atividades && !atividades.__error && Array.isArray(atividades)) {
-        if (atividades.length === 0) {
-            activityContainer.innerHTML = '<li>Nenhuma atividade recente.</li>';
-        } else {
-            // Configuração de limites
-            const PREVIA_LIMIT = 3;
-            let temMaisItens = false;
-
-            atividades.forEach((item, index) => {
-                // Define cor e data
-                const classeCor = item.tipo === 'venda' ? 'bg-venda' : 'bg-cadastro';
-                const dataObj = new Date(item.data);
-                const dataFmt = dataObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour:'2-digit', minute:'2-digit' });
-
-                const li = document.createElement('li');
-                li.className = 'feed-item';
-                
-                // Se o índice for maior que 4 (0,1,2,3,4 = 5 itens), esconde o item
-                if (index >= PREVIA_LIMIT) {
-                    li.classList.add('hidden-item');
-                    temMaisItens = true;
-                }
-                
-                li.innerHTML = `
-                    <div class="feed-icon ${classeCor}">
-                        ${item.icone}
-                    </div>
-                    <div class="feed-info">
-                        <span class="feed-title">${item.titulo}</span>
-                        <span class="feed-desc">${item.descricao} — <strong>${item.detalhe}</strong></span>
-                        <span class="feed-date">${dataFmt}</span>
-                    </div>
-                `;
-                activityContainer.appendChild(li);
-            });
-
-            // Lógica do Botão
-            if (temMaisItens) {
-                loadMoreBtn.style.display = 'block'; // Mostra o botão
-                
-                loadMoreBtn.onclick = function() {
-                    // Pega todos os itens escondidos
-                    const escondidos = document.querySelectorAll('.hidden-item');
-                    escondidos.forEach(el => {
-                        el.style.display = 'flex'; // Mostra o item (display flex para manter alinhamento)
-                        el.classList.remove('hidden-item'); // Opcional, remove a classe
-                    });
-                    // Esconde o botão após clicar
-                    loadMoreBtn.style.display = 'none';
-                };
-            }
-        }
-    } else {
-        activityContainer.innerHTML = '<li style="color:red">Erro ao carregar atividades.</li>';
-    }
-});
-</script>
-<style>
-    /* Estilos do Widget de Perfil */
-    .profile-widget {
-        position: fixed;
-        bottom: 20px;
-        left: 20px;
-        background: #ffffff;
-        padding: 10px 15px;
-        border-radius: 50px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        border: 1px solid #e2e8f0;
-        z-index: 9999;
-        font-family: 'Inter', sans-serif;
-    }
-    .profile-avatar {
-        width: 38px;
-        height: 38px;
-        background: #0f172a; /* Cor escura elegante */
-        color: white;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        font-size: 14px;
-        text-transform: uppercase;
-    }
-    .profile-info { display: flex; flex-direction: column; }
-    .profile-name { font-size: 14px; font-weight: 600; color: #333; line-height: 1.2; text-transform: capitalize; }
-    .profile-role { font-size: 11px; color: #777; }
-    .btn-logout {
-        margin-left: 8px; background: #fee2e2; color: #ef4444; border: none;
-        width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 12px; transition: 0.2s;
-    }
-    .btn-logout:hover { background: #ef4444; color: white; }
-    a.logout-link { text-decoration: none; display: flex; }
-</style>
 
 <div class="profile-widget">
     <div class="profile-avatar">
-        {{ nome_usuario[0] if nome_usuario else 'U' }}
+        {{ nome_usuario[0] if nome_usuario else "U" }}
     </div>
+
     <div class="profile-info">
-        <span class="profile-name">{{ nome_usuario }}</span>
-        <span class="profile-role">Administrador</span>
+        <span class="profile-name">
+            {{ nome_usuario }}
+        </span>
+
+        <span class="profile-role">
+            {{ perfil }}
+        </span>
     </div>
-    
-    <a href="/logout" class="logout-link" title="Sair da conta">
-        <button class="btn-logout">✕</button>
+
+    <a
+        href="{{ url_for('logout') }}"
+        class="profile-logout"
+        title="Sair da conta"
+        aria-label="Sair da conta"
+    >
+        ✕
     </a>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+    async function safeFetchJson(url, options) {
+        try {
+            const resposta = await fetch(url, options);
+            const dados = await resposta.json();
+
+            if (!resposta.ok) {
+                throw new Error(
+                    dados.mensagem ||
+                    `Erro HTTP ${resposta.status}`
+                );
+            }
+
+            return dados;
+
+        } catch (erro) {
+            console.error("Erro na requisição:", url, erro);
+
+            return {
+                __error: true,
+                mensagem: erro.message
+            };
+        }
+    }
+
+    // Indicadores
+    const resumoContainer =
+        document.getElementById("resumo-cards");
+
+    const resumo = await safeFetchJson(
+        "/api/dashboard/resumo"
+    );
+
+    resumoContainer.innerHTML = "";
+
+    if (
+        resumo &&
+        !resumo.__error &&
+        Array.isArray(resumo.cards)
+    ) {
+        resumo.cards.forEach(card => {
+            let valor = card.valor;
+
+            if (card.tipo === "moeda") {
+                valor = new Intl.NumberFormat(
+                    "pt-BR",
+                    {
+                        style: "currency",
+                        currency: "BRL"
+                    }
+                ).format(Number(card.valor || 0));
+            }
+
+            const elemento =
+                document.createElement("article");
+
+            elemento.className = "metric-card";
+
+            elemento.innerHTML = `
+                <span class="metric-label">
+                    ${card.titulo}
+                </span>
+
+                <strong class="metric-value">
+                    ${valor}
+                </strong>
+            `;
+
+            resumoContainer.appendChild(elemento);
+        });
+
+    } else {
+        resumoContainer.innerHTML = `
+            <p class="state-message">
+                Não foi possível carregar os indicadores.
+            </p>
+        `;
+    }
+
+    const perfilAtual = "{{ perfil }}";
+
+if (perfilAtual === "cliente") {
+    return;
+}
+
+    // Estoque
+    const stockContainer =
+        document.getElementById("stock-status-list");
+
+    const estoque = await safeFetchJson(
+        "/estoque/variantes"
+    );
+
+    stockContainer.innerHTML = "";
+
+    if (
+        estoque &&
+        !estoque.__error &&
+        Array.isArray(estoque) &&
+        estoque.length > 0
+    ) {
+        function prioridadeEstoque(variante) {
+    const quantidade = Number(variante.estoque || 0);
+    const minimo = Number(variante.minimo || 0);
+
+    if (quantidade === 0) {
+        return 0;
+    }
+
+    if (minimo > 0 && quantidade <= minimo) {
+        return 1;
+    }
+
+    return 2;
+}
+
+const itensOrdenados = estoque
+    .slice()
+    .sort((a, b) => {
+        const diferencaPrioridade =
+            prioridadeEstoque(a) -
+            prioridadeEstoque(b);
+
+        if (diferencaPrioridade !== 0) {
+            return diferencaPrioridade;
+        }
+
+        return (
+            Number(a.estoque || 0) -
+            Number(b.estoque || 0)
+        );
+    })
+    .slice(0, 5);
+
+itensOrdenados.forEach(variante => {
+    const quantidade = Number(variante.estoque || 0);
+    const minimo = Number(variante.minimo || 0);
+
+    let classeStatus = "stock-status-success";
+    let textoStatus = "Disponível";
+
+    if (quantidade === 0) {
+        classeStatus = "stock-status-danger";
+        textoStatus = "Sem estoque";
+
+    } else if (minimo > 0 && quantidade <= minimo) {
+        classeStatus = "stock-status-warning";
+        textoStatus = "Estoque baixo";
+    }
+
+    const minimoTexto =
+        minimo > 0
+            ? `Mínimo: ${minimo}`
+            : "Mínimo não definido";
+
+    const item = document.createElement("div");
+    item.className = "stock-overview-item";
+
+    item.innerHTML = `
+        <span
+            class="
+                stock-status-indicator
+                ${classeStatus}
+            "
+        ></span>
+
+        <div class="stock-overview-content">
+            <strong class="stock-overview-name">
+                ${variante.nome_produto}
+            </strong>
+
+            <span class="stock-overview-meta">
+                ${variante.sku} · ${minimoTexto}
+            </span>
+        </div>
+
+        <div class="stock-overview-value">
+            <strong>${quantidade}</strong>
+            <span>${textoStatus}</span>
+        </div>
+    `;
+
+    stockContainer.appendChild(item);
+});
+    } else {
+        stockContainer.innerHTML = `
+            <div class="empty-state">
+                <h3 class="empty-state-title">
+                    Nenhum produto encontrado
+                </h3>
+
+                <p class="empty-state-text">
+                    Não há informações de estoque disponíveis.
+                </p>
+            </div>
+        `;
+    }
+
+    // Atividades recentes
+    const activityContainer =
+        document.getElementById("activity-feed");
+
+    const loadMoreButton =
+        document.getElementById("btn-load-more");
+
+    const atividades = await safeFetchJson(
+        "/api/atividades_recentes"
+    );
+
+    activityContainer.innerHTML = "";
+
+    if (
+        atividades &&
+        !atividades.__error &&
+        Array.isArray(atividades)
+    ) {
+        if (atividades.length === 0) {
+            activityContainer.innerHTML = `
+                <li class="state-message">
+                    Nenhuma atividade recente.
+                </li>
+            `;
+
+            return;
+        }
+
+        const limiteInicial = 3;
+        let possuiMaisItens = false;
+
+        atividades.forEach((atividade, indice) => {
+            const data = atividade.data
+                ? new Date(atividade.data).toLocaleString(
+                    "pt-BR",
+                    {
+                        day: "2-digit",
+                        month: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                    }
+                )
+                : "Data não informada";
+
+            const item = document.createElement("li");
+            item.className = "activity-item";
+
+            if (indice >= limiteInicial) {
+                item.classList.add(
+                "activity-extra-item",
+                "dashboard-hidden-item"
+    );
+
+    possuiMaisItens = true;
+}
+
+            item.innerHTML = `
+                
+
+                <div class="activity-content">
+                    <span class="activity-title">
+                        ${atividade.titulo}
+                    </span>
+
+                    <span class="activity-description">
+                        ${atividade.descricao}
+                        — ${atividade.detalhe}
+                    </span>
+
+                    <span class="activity-date">
+                        ${data}
+                    </span>
+                </div>
+            `;
+
+            activityContainer.appendChild(item);
+        });
+
+        loadMoreButton.hidden = !possuiMaisItens;
+
+        let atividadesExpandidas = false;
+
+loadMoreButton.addEventListener("click", () => {
+    atividadesExpandidas = !atividadesExpandidas;
+
+    activityContainer
+        .querySelectorAll(".activity-extra-item")
+        .forEach(item => {
+            item.classList.toggle(
+                "dashboard-hidden-item",
+                !atividadesExpandidas
+            );
+        });
+
+    loadMoreButton.textContent =
+        atividadesExpandidas
+            ? "Mostrar menos"
+            : "Ver todas as atividades";
+});
+
+    } else {
+        activityContainer.innerHTML = `
+            <li class="state-message">
+                Não foi possível carregar as atividades.
+            </li>
+        `;
+    }
+});
+</script>
+
 </body>
 </html>
