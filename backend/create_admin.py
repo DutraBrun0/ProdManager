@@ -42,7 +42,6 @@ def criar_administrador():
         nome, email, senha = solicitar_dados()
 
         with app.app_context():
-            db.create_all()
 
             usuario_existente = Usuario.query.filter_by(
                 email=email

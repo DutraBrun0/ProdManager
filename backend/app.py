@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for
+from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash
 from database import init_app, db
 from models import (
@@ -18,6 +19,8 @@ TEMPLATE_DIR = os.path.join(BASE_DIR, "../frontend")
 
 app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=TEMPLATE_DIR)
 init_app(app)
+
+migrate = Migrate(app, db)
 
 # 🔴 NOVO: CHAVE SECRETA OBRIGATÓRIA PARA SESSÕES
 app.secret_key = os.getenv("FLASK_SECRET_KEY")

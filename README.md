@@ -47,7 +47,7 @@ As permissões são verificadas no backend. Portanto, esconder uma opção da in
 
 | Área | Tecnologias |
 |---|---|
-| Backend | Python, Flask e Flask-SQLAlchemy |
+| Backend | Python, Flask, Flask-SQLAlchemy e Flask-Migrate |
 | Banco de dados | MySQL e PyMySQL |
 | Frontend | HTML, CSS e JavaScript |
 | Autenticação | Flask Session e Werkzeug |
@@ -85,6 +85,12 @@ TCC-1/
 │   ├── faturamento.css
 │   ├── menu.css
 │   └── produtos.css
+├── migrations/
+│   ├── versions/
+│   │   └── b1b6bcf683f3_estrutura_inicial.py
+│   ├── alembic.ini
+│   ├── env.py
+│   └── script.py.mako
 ├── tests/
 │   ├── conftest.py
 │   ├── test_auth.py
@@ -205,24 +211,18 @@ python -c "import secrets; print(secrets.token_hex(32))"
 
 Nunca envie o arquivo `.env` para o GitHub.
 
-### 6. Criar as tabelas
+### 6. Aplicar as migrações
 
-Entre na pasta do backend:
+Execute as migrações para criar ou atualizar as tabelas:
 
 ```powershell
-cd backend
+python -m flask --app .\backend\app.py db upgrade
 ```
 
-Execute:
+Para verificar a versão atual do banco:
 
 ```powershell
-python -c "from app import app; from database import db; app.app_context().push(); db.create_all(); print('Tabelas criadas com sucesso!')"
-```
-
-Depois retorne à raiz:
-
-```powershell
-cd ..
+python -m flask --app .\backend\app.py db current
 ```
 
 ### 7. Criar o primeiro administrador
@@ -303,7 +303,6 @@ O projeto aplica algumas práticas importantes:
 ## Próximas melhorias
 
 - Adicionar testes automatizados.
-- Implementar migrações de banco de dados.
 - Criar paginação para grandes quantidades de registros.
 - Adicionar recuperação de senha.
 - Publicar uma demonstração online.
