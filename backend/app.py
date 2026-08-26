@@ -598,6 +598,66 @@ def entrada_estoque_compat():
     except Exception as e:
         return jsonify({"status": "erro", "mensagem": str(e)}), 400
 
+@app.route("/api/clientes/cadastrar", methods=["POST"])
+@api_login_required
+@api_roles_required("admin", "comercial")
+def cadastrar_cliente_api():
+    data = request.get_json(silent=True) or {}
+
+    nome = (data.get("nome") or "").strip()
+    email = (data.get("email") or "").strip().lower()
+    senha = data.get("senha") or ""
+
+    if not nome or not email or not senha:
+        return jsonify({
+            "status": "erro",
+            "mensagem": "Preencha todos os campos"
+        }), 400
+
+    if len(senha) < 8:
+        return jsonify({
+            "status": "erro",
+            "mensagem": (
+                "A senha deve possuir pelo menos "
+                "8 caracteres"
+            )
+        }), 400
+
+    if Usuario.query.filter_by(email=email).first():
+        return jsonify({
+            "status": "erro",
+            "mensagem": "E-mail já cadastrado"
+        }), 400
+
+    try:
+        cliente = Usuario(
+            nome=nome,
+            email=email,
+            senha_hash=generate_password_hash(senha),
+            perfil="cliente",
+            ativo=True
+        )
+
+        db.session.add(cliente)
+        db.session.commit()
+
+        return jsonify({
+            "status": "ok",
+            "mensagem": "Cliente cadastrado com sucesso",
+            "cliente": {
+                "id": cliente.id,
+                "nome": cliente.nome,
+                "email": cliente.email
+            }
+        }), 201
+
+    except Exception:
+        db.session.rollback()
+
+        return jsonify({
+            "status": "erro",
+            "mensagem": "Não foi possível cadastrar o cliente"
+        }), 500
 
 @app.route("/api/clientes", methods=["GET"])
 @api_login_required
