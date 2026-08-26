@@ -1,147 +1,45 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-<meta charset="UTF-8">
-<title>Faturamento - Mev Glass OS</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='menu.css') }}">
-<style>
-    /* --- ESTILO CLEAN & SUAVE (Layout 2 Colunas) --- */
-    :root {
-        --bg-body: #f8fafc;
-        --bg-card: #ffffff;
-        --input-bg: #ffffff;
-        --border-subtle: #e2e8f0;
-        --text-main: #334155;
-        --text-muted: #64748b;
-        --primary: #0f172a; 
-        --blue-btn: #3b82f6;
-        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-        --success: #10b981;
-    }
+    <meta charset="UTF-8">
 
-    body {
-        background-color: var(--bg-body);
-        color: var(--text-main);
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        margin: 0;
-        padding-bottom: 60px;
-    }
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-    header {
-        background: var(--bg-card);
-        border-bottom: 1px solid var(--border-subtle);
-        padding: 15px 20px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    header h1 a { color: var(--primary); text-decoration: none; font-weight: 700; font-size: 1.2rem; }
-    nav a { color: var(--text-muted); text-decoration: none; margin-left: 20px; font-size: 0.9rem; transition: 0.2s; }
-    nav a:hover { color: var(--primary); }
+    <title>Vendas - ProdManager</title>
 
-    /* Layout de Grade (Grid) para separar as áreas */
-    main {
-        max-width: 1200px;
-        margin: 40px auto;
-        padding: 0 20px;
-        display: grid;
-        grid-template-columns: 350px 1fr; /* Coluna fixa esquerda, resto direita */
-        gap: 30px;
-        align-items: start;
-    }
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='base.css') }}"
+    >
 
-    /* Estilo dos Cards */
-    .card {
-        background: var(--bg-card);
-        padding: 30px;
-        border-radius: 16px;
-        box-shadow: var(--shadow-md);
-        border: 1px solid var(--border-subtle);
-    }
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='components.css') }}"
+    >
 
-    h2, h3 { font-weight: 600; color: var(--primary); margin: 0 0 10px 0; font-size: 1.3rem; }
-    .subtitle { color: var(--text-muted); font-size: 0.85rem; display: block; margin-bottom: 20px; }
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='faturamento.css') }}"
+    >
 
-    /* Inputs */
-    .form-group { margin-bottom: 20px; }
-    
-    label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; color: var(--text-main); }
-
-    select, input {
-        width: 100%;
-        padding: 12px 16px;
-        background-color: var(--bg-body);
-        border: 1px solid var(--border-subtle);
-        border-radius: 8px;
-        color: var(--text-main);
-        font-size: 0.95rem;
-        transition: all 0.2s ease;
-        box-sizing: border-box;
-    }
-    select:focus, input:focus {
-        background-color: #fff;
-        border-color: var(--blue-btn);
-        outline: none;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-
-    /* Botão */
-    button[type="submit"] {
-        background-color: var(--primary);
-        color: white;
-        width: 100%;
-        padding: 14px;
-        font-size: 1rem;
-        font-weight: 600;
-        border-radius: 8px;
-        border: none;
-        margin-top: 10px;
-        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
-        cursor: pointer;
-        transition: transform 0.1s;
-    }
-    button[type="submit"]:hover {
-        background-color: #1e293b;
-        transform: translateY(-1px);
-    }
-    button:disabled { background-color: #cbd5e1; cursor: not-allowed; transform: none; box-shadow: none; }
-
-    /* Tabela */
-    .table-wrapper { overflow-x: auto; }
-    table { width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; }
-    
-    th {
-        padding: 12px 15px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        color: var(--text-muted);
-        border-bottom: 2px solid var(--border-subtle);
-    }
-    td {
-        padding: 15px;
-        font-size: 0.9rem;
-        color: var(--text-main);
-        border-bottom: 1px solid #f1f5f9;
-        background-color: #fff;
-    }
-    
-    /* Tags Visuais */
-    .price-tag { font-weight: 700; color: var(--success); }
-    .id-tag { font-family: monospace; background: #f1f5f9; padding: 4px 8px; border-radius: 4px; color: var(--text-muted); font-size: 0.8rem; }
-    
-    /* Responsividade */
-    @media (max-width: 900px) {
-        main { grid-template-columns: 1fr; } /* Vira 1 coluna em telas menores */
-    }
-</style>
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='menu.css') }}"
+    >
 </head>
+
 <body>
 
 <header class="app-header">
     <h1>
-        <a href="{{ url_for('inicio_page') }}" class="app-brand">
+        <a
+            href="{{ url_for('inicio_page') }}"
+            class="app-brand"
+        >
             prodmanager
         </a>
     </h1>
@@ -149,130 +47,342 @@
     {% include "_menu.html" %}
 </header>
 
-<main>
-    <div class="card">
-        <h2>Nova Venda</h2>
-        <span class="subtitle">Preencha os dados para lançar o pedido.</span>
+<main class="app-main">
 
-        <form id="faturamento-form">
-            <div class="form-group">
-                <label>Cliente</label>
-                <select id="fatura-cliente" required>
-                    <option value="">Carregando clientes...</option>
-                </select>
-                <small style="color:#999; font-size:0.8em;">*Clientes cadastrados na aba 'Clientes'</small>
-            </div>
-            
-            <div class="form-group">
-                <label>Produto (Variante)</label>
-                <select id="fatura-produto" required>
-                    <option value="">Carregando produtos...</option>
-                </select>
-            </div>
+    <div class="page-heading">
+        <div class="page-heading-content">
+            <span class="page-eyebrow">
+                Comercial
+            </span>
 
-            <div class="form-group">
-                <label>Quantidade</label>
-                <input type="number" id="fatura-quantidade" placeholder="1" min="1" required>
-            </div>
-            
-            <button type="submit">Confirmar Venda</button>
-        </form>
-    </div>
+            <h2 class="page-title">
+                Vendas e pedidos
+            </h2>
 
-
-
-    <div class="card">
-        <h2>Histórico de Vendas</h2>
-        <span class="subtitle">Últimos pedidos realizados no sistema.</span>
-        
-        <div class="table-wrapper">
-            <table id="faturamento-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Cliente</th>
-                        <th>Resumo</th>
-                        <th>Total</th>
-                        <th>Status</th>
-                        <th>Data</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody id="lista-pedidos-body">
-                    <tr><td colspan="7" style="text-align:center; padding:20px; color:#999;">Carregando...</td></tr>
-                </tbody>
-            </table>
+            <p class="page-description">
+                Registre novas vendas, acompanhe o andamento
+                e consulte o histórico de pedidos.
+            </p>
         </div>
+
+        <a
+            href="{{ url_for('clientes_page') }}"
+            class="button button-secondary"
+        >
+            Novo cliente
+        </a>
     </div>
+
+    <section
+        class="sales-metrics"
+        aria-label="Resumo das vendas"
+    >
+        <article class="metric-card">
+            <span class="metric-label">
+                Faturamento
+            </span>
+
+            <strong
+                id="metric-faturamento"
+                class="metric-value"
+            >
+                R$ 0,00
+            </strong>
+        </article>
+
+        <article class="metric-card">
+            <span class="metric-label">
+                Pedidos válidos
+            </span>
+
+            <strong
+                id="metric-pedidos"
+                class="metric-value"
+            >
+                0
+            </strong>
+        </article>
+
+        <article class="metric-card">
+            <span class="metric-label">
+                Em andamento
+            </span>
+
+            <strong
+                id="metric-andamento"
+                class="metric-value"
+            >
+                0
+            </strong>
+        </article>
+    </section>
+
+    <section class="panel sales-create-panel">
+        <div class="panel-header">
+            <div>
+                <h3 class="panel-title">
+                    Registrar nova venda
+                </h3>
+
+                <p class="panel-description">
+                    Selecione o cliente, o produto e
+                    a quantidade desejada.
+                </p>
+            </div>
+        </div>
+
+        <div class="panel-body">
+            <div
+                id="mensagem-venda"
+                class="alert"
+                hidden
+            ></div>
+
+            <form
+                id="faturamento-form"
+                class="sales-form-grid"
+            >
+                <div class="form-field">
+                    <label
+                        for="fatura-cliente"
+                        class="form-label"
+                    >
+                        Cliente
+                    </label>
+
+                    <select
+                        id="fatura-cliente"
+                        class="form-control"
+                        required
+                    >
+                        <option value="">
+                            Carregando clientes...
+                        </option>
+                    </select>
+                </div>
+
+                <div class="form-field">
+                    <label
+                        for="fatura-produto"
+                        class="form-label"
+                    >
+                        Produto ou variante
+                    </label>
+
+                    <select
+                        id="fatura-produto"
+                        class="form-control"
+                        required
+                    >
+                        <option value="">
+                            Carregando produtos...
+                        </option>
+                    </select>
+                </div>
+
+                <div class="form-field">
+                    <label
+                        for="fatura-quantidade"
+                        class="form-label"
+                    >
+                        Quantidade
+                    </label>
+
+                    <input
+                        type="number"
+                        id="fatura-quantidade"
+                        class="form-control"
+                        min="1"
+                        step="1"
+                        value="1"
+                        required
+                    >
+                </div>
+
+                <button
+                    type="submit"
+                    class="
+                        button
+                        button-primary
+                        sales-submit
+                    "
+                >
+                    Confirmar venda
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-header">
+            <div>
+                <h3 class="panel-title">
+                    Histórico de pedidos
+                </h3>
+
+                <p class="panel-description">
+                    Atualize o status ou cancele pedidos
+                    ainda não concluídos.
+                </p>
+            </div>
+        </div>
+
+        <div class="panel-body">
+            <div class="table-container">
+                <div class="table-scroll">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Pedido</th>
+                                <th>Cliente</th>
+                                <th>Resumo</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Data</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="lista-pedidos-body">
+                            <tr>
+                                <td
+                                    colspan="7"
+                                    class="state-message"
+                                >
+                                    Carregando pedidos...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
 </main>
 
 <script>
-// 1. Carregar Clientes (DO LOCALSTORAGE) e Produtos (DA API)
+const mensagemVenda = document.getElementById(
+    "mensagem-venda"
+);
+
+function formatarMoeda(valor) {
+    return new Intl.NumberFormat(
+        "pt-BR",
+        {
+            style: "currency",
+            currency: "BRL"
+        }
+    ).format(Number(valor || 0));
+}
+
+function mostrarMensagemVenda(texto, sucesso) {
+    mensagemVenda.hidden = false;
+
+    mensagemVenda.className = sucesso
+        ? "alert alert-success"
+        : "alert alert-danger";
+
+    mensagemVenda.textContent = texto;
+}
+
 async function carregarDados() {
     try {
-       // --- CARREGAR CLIENTES DO BANCO ---
-const clientesReq = await fetch("/api/clientes");
-const clientes = await clientesReq.json();
+        const clientesReq = await fetch("/api/clientes");
+        const clientes = await clientesReq.json();
 
-if (!clientesReq.ok) {
-    throw new Error(
-        clientes.mensagem || "Não foi possível carregar os clientes"
-    );
-}
+        if (!clientesReq.ok) {
+            throw new Error(
+                clientes.mensagem ||
+                "Não foi possível carregar os clientes"
+            );
+        }
 
-const clienteSelect = document.getElementById("fatura-cliente");
+        const clienteSelect = document.getElementById(
+            "fatura-cliente"
+        );
 
-clienteSelect.innerHTML =
-    "<option value=''>Selecione o cliente</option>";
+        clienteSelect.innerHTML = `
+            <option value="">
+                Selecione o cliente
+            </option>
+        `;
 
-if (clientes.length === 0) {
-    clienteSelect.innerHTML +=
-        "<option disabled>Nenhum cliente cadastrado</option>";
-} else {
-    clientes.forEach(cliente => {
-        const option = document.createElement("option");
+        clientes.forEach(cliente => {
+            const option =
+                document.createElement("option");
 
-        option.value = cliente.id;
-        option.textContent = `${cliente.nome} — ${cliente.email}`;
+            option.value = cliente.id;
+            option.textContent =
+                `${cliente.nome} — ${cliente.email}`;
 
-        clienteSelect.appendChild(option);
-    });
-}
-        const produtosReq = await fetch("/produto/catalogo");
-        const produtos = await produtosReq.json();
-        const produtoSelect = document.getElementById("fatura-produto");
-        
-        produtoSelect.innerHTML = "<option value=''>Selecione o Produto</option>";
-        
-        // Ordena alfabeticamente
-        produtos.sort((a, b) => a.linha.localeCompare(b.linha));
-
-        produtos.forEach(p => {
-            const estoqueTexto = p.estoque > 0 ? `(Estoque: ${p.estoque})` : `(SEM ESTOQUE)`;
-            const disabled = p.estoque <= 0 ? 'disabled' : '';
-            
-            produtoSelect.innerHTML += `
-                <option value="${p.variante_id}" data-estoque="${p.estoque}" data-preco="${p.preco_base}" ${disabled}>
-                    ${p.linha} ${p.formato} - ${p.cor || ''} ${estoqueTexto} - R$ ${parseFloat(p.preco_base).toFixed(2)}
-                </option>
-            `;
+            clienteSelect.appendChild(option);
         });
 
-        checkProdutoEstoque();
-        
-    } catch (e) {
-        console.error("Erro ao carregar dados:", e);
+        const produtosReq = await fetch(
+            "/produto/catalogo"
+        );
+
+        const produtos = await produtosReq.json();
+
+        if (!produtosReq.ok) {
+            throw new Error(
+                produtos.mensagem ||
+                "Não foi possível carregar os produtos"
+            );
+        }
+
+        const produtoSelect = document.getElementById(
+            "fatura-produto"
+        );
+
+        produtoSelect.innerHTML = `
+            <option value="">
+                Selecione o produto
+            </option>
+        `;
+
+        produtos
+            .slice()
+            .sort((a, b) =>
+                a.linha.localeCompare(b.linha)
+            )
+            .forEach(produto => {
+                const option =
+                    document.createElement("option");
+
+                const estoque =
+                    Number(produto.estoque || 0);
+
+                option.value = produto.variante_id;
+                option.dataset.estoque = estoque;
+                option.disabled = estoque <= 0;
+
+                option.textContent =
+                    `${produto.linha} ${produto.formato}` +
+                    ` — ${produto.cor || "Padrão"}` +
+                    ` — Estoque: ${estoque}` +
+                    ` — ${formatarMoeda(produto.preco_base)}`;
+
+                produtoSelect.appendChild(option);
+            });
+
+        verificarProdutoSelecionado();
+
+    } catch (erro) {
+        mostrarMensagemVenda(erro.message, false);
     }
 }
 
 function montarOpcoesStatus(statusAtual) {
     if (statusAtual === "cancelado") {
-    return `
-        <option value="cancelado" selected>
-            Cancelado
-        </option>
-    `;
-}
+        return `
+            <option value="cancelado" selected>
+                Cancelado
+            </option>
+        `;
+    }
+
     const status = [
         ["criado", "Criado"],
         ["aprovado", "Aprovado"],
@@ -293,157 +403,361 @@ function montarOpcoesStatus(statusAtual) {
         `;
     }).join("");
 }
-// 2. Carregar Tabela de Pedidos
+
+function atualizarIndicadores(pedidos) {
+    const pedidosValidos = pedidos.filter(
+        pedido => pedido.status !== "cancelado"
+    );
+
+    const faturamento = pedidosValidos.reduce(
+        (total, pedido) =>
+            total + Number(pedido.total || 0),
+        0
+    );
+
+    const emAndamento = pedidosValidos.filter(
+        pedido =>
+            !["entregue", "finalizado"].includes(
+                pedido.status
+            )
+    ).length;
+
+    document.getElementById(
+        "metric-faturamento"
+    ).textContent = formatarMoeda(faturamento);
+
+    document.getElementById(
+        "metric-pedidos"
+    ).textContent = pedidosValidos.length;
+
+    document.getElementById(
+        "metric-andamento"
+    ).textContent = emAndamento;
+}
+
 async function carregarTabelaFaturamentos() {
+    const tbody = document.getElementById(
+        "lista-pedidos-body"
+    );
+
     try {
-        const pedidosReq = await fetch("/pedido/listar");
-        const pedidos = await pedidosReq.json();
-        const tbody = document.getElementById("lista-pedidos-body");
+        const resposta = await fetch("/pedido/listar");
+        const pedidos = await resposta.json();
+
+        if (!resposta.ok) {
+            throw new Error(
+                pedidos.mensagem ||
+                "Não foi possível carregar os pedidos"
+            );
+        }
+
+        atualizarIndicadores(pedidos);
         tbody.innerHTML = "";
 
-        if (!pedidos || pedidos.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='7' style='text-align:center; padding:20px; color:#999;'>Nenhuma venda registrada.</td></tr>";
+        if (pedidos.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7">
+                        <div class="empty-state">
+                            <h3 class="empty-state-title">
+                                Nenhum pedido registrado
+                            </h3>
+
+                            <p class="empty-state-text">
+                                As novas vendas aparecerão aqui.
+                            </p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+
             return;
         }
 
-        pedidos.forEach(p => {
-            const tr = document.createElement("tr");
-            
-            let resumo = "Vários itens";
-            if (p.itens.length > 0) {
-                const item = p.itens[0];
-                resumo = `${item.quantidade}x ${item.sku || 'Produto'}`;
-                if (p.itens.length > 1) resumo += ` (+${p.itens.length - 1})`;
+        pedidos.forEach(pedido => {
+            const primeiroItem = pedido.itens[0];
+
+            let resumo = "Sem itens";
+
+            if (primeiroItem) {
+                resumo =
+                    `${primeiroItem.quantidade}× ` +
+                    `${primeiroItem.sku || "Produto"}`;
+
+                if (pedido.itens.length > 1) {
+                    resumo +=
+                        ` e mais ${pedido.itens.length - 1}`;
+                }
             }
 
-            const dataFmt = p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR', {hour: '2-digit', minute:'2-digit'}) : '-';
+            const data = pedido.created_at
+                ? new Date(
+                    pedido.created_at.replace(" ", "T")
+                ).toLocaleString("pt-BR", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit"
+                })
+                : "—";
 
-           tr.innerHTML = `
-    <td>
-        <span class="id-tag">#${p.id}</span>
-    </td>
+            const podeCancelar = ![
+                "cancelado",
+                "entregue",
+                "finalizado"
+            ].includes(pedido.status);
 
-    <td style="font-weight:500;">
-        ${p.cliente_nome}
-    </td>
+            const linha = document.createElement("tr");
 
-    <td style="font-size:0.85rem; color:#666;">
-        ${resumo}
-    </td>
+            linha.innerHTML = `
+                <td>
+                    <span class="order-id">
+                        #${pedido.id}
+                    </span>
+                </td>
 
-    <td class="price-tag">
-        R$ ${parseFloat(p.total).toFixed(2)}
-    </td>
+                <td class="table-primary-text">
+                    ${pedido.cliente_nome}
+                </td>
 
-    <td>
-        <select
-            class="status-select"
-            data-status-anterior="${p.status}"
-            onchange="atualizarStatusPedido(${p.id}, this)"
-            ${p.status === "cancelado" ? "disabled" : ""}
-        >
-            ${montarOpcoesStatus(p.status)}
-        </select>
-    </td>
+                <td>
+                    <div class="order-summary">
+                        <span class="order-summary-main">
+                            ${resumo}
+                        </span>
 
-    <td style="font-size:0.8rem; color:#999;">
-        ${dataFmt}
-    </td>
+                        <span class="order-summary-detail">
+                            ${pedido.itens.length} ${
+                                pedido.itens.length === 1
+                                    ? "item"
+                                    : "itens"
+                            }
+                        </span>
+                    </div>
+                </td>
 
-    <td>
-        ${
-            ["cancelado", "entregue", "finalizado"].includes(p.status)
-                ? "—"
-                : `
-                    <button
-                        type="button"
-                        class="btn-cancelar"
-                        onclick="cancelarPedido(${p.id})"
+                <td class="order-total">
+                    ${formatarMoeda(pedido.total)}
+                </td>
+
+                <td>
+                    <select
+                        class="order-status"
+                        data-status-anterior="${pedido.status}"
+                        onchange="
+                            atualizarStatusPedido(
+                                ${pedido.id},
+                                this
+                            )
+                        "
+                        ${
+                            pedido.status === "cancelado"
+                                ? "disabled"
+                                : ""
+                        }
                     >
-                        Cancelar
-                    </button>
-                `
-        }
-    </td>
-`;
-            tbody.appendChild(tr);
+                        ${montarOpcoesStatus(pedido.status)}
+                    </select>
+                </td>
+
+                <td class="order-date">
+                    ${data}
+                </td>
+
+                <td>
+                    ${
+                        podeCancelar
+                            ? `
+                                <button
+                                    type="button"
+                                    class="
+                                        button
+                                        button-danger
+                                        button-small
+                                    "
+                                    onclick="
+                                        cancelarPedido(
+                                            ${pedido.id}
+                                        )
+                                    "
+                                >
+                                    Cancelar
+                                </button>
+                            `
+                            : "—"
+                    }
+                </td>
+            `;
+
+            tbody.appendChild(linha);
         });
-    } catch (e) {
-        console.error("Erro tabela:", e);
+
+    } catch (erro) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7">
+                    <div class="empty-state">
+                        <h3 class="empty-state-title">
+                            Erro ao carregar pedidos
+                        </h3>
+
+                        <p class="empty-state-text">
+                            ${erro.message}
+                        </p>
+                    </div>
+                </td>
+            </tr>
+        `;
     }
 }
 
-// 3. Enviar Venda
-document.getElementById("faturamento-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
+document
+    .getElementById("faturamento-form")
+    .addEventListener("submit", async evento => {
+        evento.preventDefault();
 
-    const clienteId = document.getElementById("fatura-cliente").value; // Agora pegamos o NOME
-    const produtoSelect = document.getElementById("fatura-produto");
-    const varianteId = produtoSelect.value;
-    const quantidade = parseInt(document.getElementById("fatura-quantidade").value);
+        mensagemVenda.hidden = true;
 
-    if (!clienteId || !varianteId || !quantidade) {
-        alert("Preencha todos os campos!");
-        return;
-    }
+        const clienteId = document.getElementById(
+            "fatura-cliente"
+        ).value;
 
-    const estoque = parseInt(produtoSelect.selectedOptions[0]?.dataset.estoque || 0);
-    const preco = parseFloat(produtoSelect.selectedOptions[0]?.dataset.preco || 0);
+        const produtoSelect = document.getElementById(
+            "fatura-produto"
+        );
 
-    if (quantidade > estoque) {
-        alert(`Estoque insuficiente! Disponível: ${estoque}`);
-        return;
-    }
+        const varianteId = produtoSelect.value;
 
-    const payload = {
-        cliente_id: parseInt(clienteId),
-        itens: [{
-            variante_id: parseInt(varianteId),
-            quantidade: quantidade
-    }]
-    };
+        const quantidade = Number(
+            document.getElementById(
+                "fatura-quantidade"
+            ).value
+        );
 
-    try {
-        const req = await fetch("/pedido/criar", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
-        
-        const res = await req.json();
+        const estoque = Number(
+            produtoSelect.selectedOptions[0]
+                ?.dataset.estoque || 0
+        );
 
-        if (req.ok) {
-            alert(`Venda realizada com sucesso! Pedido #${res.pedido_id}`);
-            e.target.reset();
-            carregarDados();
-            carregarTabelaFaturamentos();
-        } else {
-            alert("Erro: " + (res.error || "Desconhecido"));
+        const botao = evento.currentTarget.querySelector(
+            'button[type="submit"]'
+        );
+
+        if (
+            !clienteId ||
+            !varianteId ||
+            !Number.isInteger(quantidade) ||
+            quantidade <= 0
+        ) {
+            mostrarMensagemVenda(
+                "Preencha todos os campos corretamente.",
+                false
+            );
+
+            return;
         }
-    } catch (err) {
-        alert("Erro de conexão com o servidor.");
-    }
-});
 
-// Utilitário visual para estoque
-function checkProdutoEstoque() {
-    const sel = document.getElementById("fatura-produto");
-    const btn = document.querySelector("button[type='submit']");
-    const opt = sel.selectedOptions[0];
+        if (quantidade > estoque) {
+            mostrarMensagemVenda(
+                `Estoque insuficiente. Disponível: ${estoque}.`,
+                false
+            );
 
-    if (opt && opt.value && parseInt(opt.dataset.estoque) <= 0) {
-        btn.disabled = true;
-        btn.innerText = "Sem Estoque";
-    } else {
-        btn.disabled = false;
-        btn.innerText = "Confirmar Venda";
-    }
+            return;
+        }
+
+        botao.disabled = true;
+        botao.textContent = "Registrando...";
+
+        try {
+            const resposta = await fetch(
+                "/pedido/criar",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        cliente_id: Number(clienteId),
+                        itens: [{
+                            variante_id: Number(varianteId),
+                            quantidade: quantidade
+                        }]
+                    })
+                }
+            );
+
+            const resultado = await resposta.json();
+
+            if (!resposta.ok) {
+                throw new Error(
+                    resultado.error ||
+                    resultado.mensagem ||
+                    "Não foi possível registrar a venda"
+                );
+            }
+
+            mostrarMensagemVenda(
+                `Pedido #${resultado.pedido_id} ` +
+                `registrado com sucesso.`,
+                true
+            );
+
+            evento.currentTarget.reset();
+
+            await carregarDados();
+            await carregarTabelaFaturamentos();
+
+        } catch (erro) {
+            mostrarMensagemVenda(
+                erro.message,
+                false
+            );
+
+        } finally {
+            botao.disabled = false;
+            botao.textContent = "Confirmar venda";
+        }
+    });
+
+function verificarProdutoSelecionado() {
+    const select = document.getElementById(
+        "fatura-produto"
+    );
+
+    const botao = document.querySelector(
+        "#faturamento-form button[type='submit']"
+    );
+
+    const option = select.selectedOptions[0];
+
+    const semEstoque =
+        option &&
+        option.value &&
+        Number(option.dataset.estoque || 0) <= 0;
+
+    botao.disabled = Boolean(semEstoque);
+
+    botao.textContent = semEstoque
+        ? "Produto sem estoque"
+        : "Confirmar venda";
 }
-document.getElementById("fatura-produto").addEventListener("change", checkProdutoEstoque);
 
+document
+    .getElementById("fatura-produto")
+    .addEventListener(
+        "change",
+        verificarProdutoSelecionado
+    );
 
-async function atualizarStatusPedido(pedidoId, campo) {
-    const statusAnterior = campo.dataset.statusAnterior;
+async function atualizarStatusPedido(
+    pedidoId,
+    campo
+) {
+    const statusAnterior =
+        campo.dataset.statusAnterior;
+
     const novoStatus = campo.value;
 
     campo.disabled = true;
@@ -467,16 +781,21 @@ async function atualizarStatusPedido(pedidoId, campo) {
         if (!resposta.ok) {
             throw new Error(
                 resultado.mensagem ||
-                "Não foi possível atualizar"
+                "Não foi possível atualizar o status"
             );
         }
 
         campo.dataset.statusAnterior = novoStatus;
-        alert(resultado.mensagem);
+
+        await carregarTabelaFaturamentos();
 
     } catch (erro) {
         campo.value = statusAnterior;
-        alert("Erro: " + erro.message);
+
+        mostrarMensagemVenda(
+            erro.message,
+            false
+        );
 
     } finally {
         campo.disabled = false;
@@ -506,24 +825,33 @@ async function cancelarPedido(pedidoId) {
         if (!resposta.ok) {
             throw new Error(
                 resultado.mensagem ||
-                "Não foi possível cancelar"
+                "Não foi possível cancelar o pedido"
             );
         }
 
-        alert(resultado.mensagem);
+        mostrarMensagemVenda(
+            resultado.mensagem,
+            true
+        );
 
-        carregarDados();
-        carregarTabelaFaturamentos();
+        await carregarDados();
+        await carregarTabelaFaturamentos();
 
     } catch (erro) {
-        alert("Erro: " + erro.message);
+        mostrarMensagemVenda(
+            erro.message,
+            false
+        );
     }
 }
-// Iniciar
-document.addEventListener('DOMContentLoaded', () => {
-    carregarDados();
-    carregarTabelaFaturamentos();
-});
+
+document.addEventListener(
+    "DOMContentLoaded",
+    async () => {
+        await carregarDados();
+        await carregarTabelaFaturamentos();
+    }
+);
 </script>
 
 </body>

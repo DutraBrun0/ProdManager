@@ -1,433 +1,633 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-<meta charset="UTF-8">
-<title>Estoque - Mev Glass OS</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='menu.css') }}">
-<style>
-    /* --- ESTILO CLEAN & SUAVE (PADRÃO MEV GLASS) --- */
-    :root {
-        --bg-body: #f8fafc;
-        --bg-card: #ffffff;
-        --bg-container: #f1f5f9; /* Fundo do bloco interno */
-        --border-subtle: #e2e8f0;
-        --text-main: #334155;
-        --text-muted: #64748b;
-        --primary: #0f172a; 
-        --blue-btn: #3b82f6;
-        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-        --danger: #ef4444;
-    }
+    <meta charset="UTF-8">
 
-    body {
-        background-color: var(--bg-body);
-        color: var(--text-main);
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        margin: 0;
-        padding-bottom: 60px;
-    }
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-    /* Header */
-    header {
-        background: var(--bg-card);
-        border-bottom: 1px solid var(--border-subtle);
-        padding: 15px 20px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-    header h1 a { color: var(--primary); text-decoration: none; font-weight: 700; font-size: 1.2rem; }
-    nav a { color: var(--text-muted); text-decoration: none; margin-left: 20px; font-size: 0.9rem; transition: 0.2s; }
-    nav a:hover { color: var(--primary); }
+    <title>Estoque - ProdManager</title>
 
-    /* Layout Styles */
-    main { max-width: 950px; margin: 40px auto; padding: 0 20px; } /* Um pouco mais largo para a tabela */
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='base.css') }}"
+    >
 
-    /* Card Principal */
-    .card {
-        background: var(--bg-card);
-        padding: 40px;
-        border-radius: 16px;
-        box-shadow: var(--shadow-md);
-        border: 1px solid var(--border-subtle);
-        display: block !important;
-    }
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='components.css') }}"
+    >
 
-   .page-header {
-    margin-bottom: 20px;
-    display: block !important;
-}
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='estoque.css') }}"
+    >
 
-    /* --- BLOCO DA TABELA (O "Bloco Dentro") --- */
-    .table-container {
-        background-color: var(--bg-container);
-        border: 1px dashed var(--border-subtle);
-        border-radius: 12px;
-        padding: 20px;
-        overflow-x: auto; /* Garante rolagem se a tabela for muito larga */
-    }
-
-    /* Estilização da Tabela Clean */
-    table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-        text-align: left;
-    }
-
-    thead tr {
-        background-color: transparent;
-    }
-
-    th {
-        padding: 12px 15px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--text-muted);
-        border-bottom: 2px solid var(--border-subtle);
-    }
-
-    td {
-        padding: 15px;
-        font-size: 0.95rem;
-        color: var(--text-main);
-        border-bottom: 1px solid #e2e8f0;
-        background-color: #fff; /* Linhas brancas */
-    }
-
-    /* Arredondar cantos da primeira e última linha para estética */
-    tbody tr:first-child td:first-child { border-top-left-radius: 8px; }
-    tbody tr:first-child td:last-child { border-top-right-radius: 8px; }
-    tbody tr:last-child td:first-child { border-bottom-left-radius: 8px; }
-    tbody tr:last-child td:last-child { border-bottom-right-radius: 8px; }
-    
-    /* Remove borda da última linha */
-    tbody tr:last-child td { border-bottom: none; }
-
-    /* Hover na linha */
-    tbody tr { cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; }
-    tbody tr:hover td {
-        background-color: #f8fafc; /* Leve destaque ao passar o mouse */
-        color: var(--primary);
-    }
-
-    /* Destaques específicos */
-    .sku-tag {
-        font-family: monospace;
-        background: #f1f5f9;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 0.85rem;
-        color: var(--text-muted);
-    }
-    
-    .qtd-destaque {
-        font-weight: 700;
-        color: var(--blue-btn); /* Azul do tema */
-    }
-
-.barra-estoque {
-    display: block;
-    width: 100%;
-    margin-bottom: 14px;;
-}
-
-.btn-movimentacao {
-    border: 1px solid var(--border-subtle);
-    border-radius: 6px;
-    padding: 5px 9px;
-    background: transparent;
-    color: var(--text-muted);
-    font-size: 0.78rem;
-    font-weight: 500;
-    cursor: pointer;
-}
-
-.btn-movimentacao:hover {
-    color: var(--primary);
-    background-color: #f1f5f9;
-}
-.modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background-color: rgba(15, 23, 42, 0.55);
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    z-index: 1000;
-}
-
-.modal-overlay.ativo {
-    display: flex;
-}
-
-.modal-conteudo {
-    background-color: white;
-    width: 100%;
-    max-width: 430px;
-    padding: 28px;
-    border-radius: 14px;
-    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.25);
-}
-
-.modal-conteudo h3 {
-    margin: 0 0 20px;
-    color: var(--primary);
-}
-
-.campo-modal {
-    margin-bottom: 16px;
-}
-
-.campo-modal label {
-    display: block;
-    margin-bottom: 6px;
-    font-size: 0.85rem;
-    font-weight: 600;
-}
-
-.campo-modal input,
-.campo-modal select {
-    width: 100%;
-    padding: 11px 12px;
-    border: 1px solid var(--border-subtle);
-    border-radius: 8px;
-    font: inherit;
-    box-sizing: border-box;
-}
-
-.modal-acoes {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 22px;
-}
-
-.btn-cancelar,
-.btn-confirmar {
-    border: none;
-    border-radius: 8px;
-    padding: 10px 14px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.btn-cancelar {
-    background-color: #e2e8f0;
-    color: var(--text-main);
-}
-
-.btn-confirmar {
-    background-color: var(--primary);
-    color: white;
-}
-
-.mensagem-modal {
-    display: none;
-    margin: 12px 0 0;
-    padding: 9px 11px;
-    border-radius: 7px;
-    font-size: 0.85rem;
-}
-
-.mensagem-modal.erro {
-    display: block;
-    background-color: #fee2e2;
-    color: #991b1b;
-}
-
-.mensagem-modal.sucesso {
-    display: block;
-    background-color: #dcfce7;
-    color: #166534;
-}
-</style>
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='menu.css') }}"
+    >
 </head>
 
 <body>
+
 <header class="app-header">
     <h1>
         <a
             href="{{ url_for('inicio_page') }}"
-            class="app-brand">
+            class="app-brand"
+        >
             prodmanager
         </a>
     </h1>
 
     {% include "_menu.html" %}
 </header>
-<main>
-<div class="card">
 
-<div class="page-header">
-    <h2>Controle de Estoque</h2>
-    <span class="subtitle">
-        Acompanhe as quantidades e registre movimentações.
-    </span>
-</div>
+<main class="app-main">
 
-<div class="barra-estoque">
-    <button
-        type="button"
-        class="btn-movimentacao"
-        onclick="abrirMovimentacao()">
-        + Movimentar
-    </button>
-</div>
+    <div class="page-heading">
+        <div class="page-heading-content">
+            <span class="page-eyebrow">
+                Operação
+            </span>
 
-        <div class="table-container">
-            <table>
-                <thead>
-                <tr>
-                    <th>SKU</th>
-                    <th>Produto</th>
-                    <th>Dimensões</th>
-                    <th>Cor / Moldura</th>
-                    <th>Preço Base</th>
-                    <th>Quantidade</th>
-                </tr>
-                </thead>
-                <tbody id="tabela-estoque">
-                    </tbody>
-            </table>
+            <h2 class="page-title">
+                Controle de estoque
+            </h2>
+
+            <p class="page-description">
+                Consulte quantidades, identifique produtos
+                em atenção e registre entradas ou saídas.
+            </p>
         </div>
+
+        <button
+            type="button"
+            class="button button-primary"
+            onclick="abrirMovimentacao()"
+        >
+            Movimentar estoque
+        </button>
     </div>
+
+    <section
+        class="inventory-metrics"
+        aria-label="Resumo do estoque"
+    >
+        <article class="metric-card">
+            <span class="metric-label">
+                Variantes ativas
+            </span>
+
+            <strong
+                id="metric-variantes"
+                class="metric-value"
+            >
+                0
+            </strong>
+        </article>
+
+        <article class="metric-card">
+            <span class="metric-label">
+                Unidades disponíveis
+            </span>
+
+            <strong
+                id="metric-unidades"
+                class="metric-value"
+            >
+                0
+            </strong>
+        </article>
+
+        <article class="metric-card">
+            <span class="metric-label">
+                Itens em atenção
+            </span>
+
+            <strong
+                id="metric-baixo"
+                class="metric-value"
+            >
+                0
+            </strong>
+        </article>
+    </section>
+
+    <section class="panel">
+        <div class="panel-header">
+            <div class="inventory-toolbar">
+                <div>
+                    <h3 class="panel-title">
+                        Produtos armazenados
+                    </h3>
+
+                    <p class="panel-description">
+                        Estoque atual de cada variante.
+                    </p>
+                </div>
+
+                <div class="inventory-search">
+                    <label
+                        for="inventory-search"
+                        class="visually-hidden"
+                    >
+                        Pesquisar estoque
+                    </label>
+
+                    <input
+                        type="search"
+                        id="inventory-search"
+                        class="form-control"
+                        placeholder="Pesquisar produto ou SKU"
+                    >
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-body">
+            <div class="table-container">
+                <div class="table-scroll">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>SKU</th>
+                                <th>Produto</th>
+                                <th>Dimensões</th>
+                                <th>Acabamento</th>
+                                <th>Preço</th>
+                                <th>Estoque</th>
+                                <th>Situação</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="tabela-estoque">
+                            <tr>
+                                <td
+                                    colspan="7"
+                                    class="state-message"
+                                >
+                                    Carregando estoque...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
 </main>
 
-<div id="modal-movimentacao" class="modal-overlay">
-    <div class="modal-conteudo">
-        <h3>Registrar movimentação</h3>
+<div
+    id="modal-movimentacao"
+    class="modal-backdrop"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="titulo-modal-movimentacao"
+>
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <div>
+                <h3
+                    id="titulo-modal-movimentacao"
+                    class="modal-title"
+                >
+                    Registrar movimentação
+                </h3>
 
-        <form id="form-movimentacao">
-            <div class="campo-modal">
-                <label for="movimento-produto">Produto / Variante</label>
-                <select id="movimento-produto" required>
-                    <option value="">Selecione um produto</option>
-                </select>
+                <p class="panel-description">
+                    Informe o produto, o tipo e a quantidade.
+                </p>
             </div>
 
-            <div class="campo-modal">
-                <label for="movimento-tipo">Tipo</label>
-                <select id="movimento-tipo" required>
-                    <option value="entrada">Entrada</option>
-                    <option value="saida">Saída</option>
-                </select>
-            </div>
+            <button
+                type="button"
+                class="modal-close"
+                onclick="fecharMovimentacao()"
+                aria-label="Fechar"
+            >
+                ✕
+            </button>
+        </div>
 
-            <div class="campo-modal">
-                <label for="movimento-quantidade">Quantidade</label>
-                <input
-                    id="movimento-quantidade"
-                    type="number"
-                    min="1"
-                    step="1"
-                    value="1"
-                    required>
-            </div>
+        <div class="modal-body">
+            <form
+                id="form-movimentacao"
+                class="inventory-modal-form"
+            >
+                <div class="form-stack">
+                    <div class="form-field">
+                        <label
+                            for="movimento-produto"
+                            class="form-label"
+                        >
+                            Produto ou variante
+                        </label>
 
-            <div class="campo-modal">
-                <label for="movimento-motivo">Motivo</label>
-                <input
-                    id="movimento-motivo"
-                    type="text"
-                    maxlength="120"
-                    placeholder="Ex.: reposição de mercadoria"
-                    required>
-            </div>
+                        <select
+                            id="movimento-produto"
+                            class="form-control"
+                            required
+                        >
+                            <option value="">
+                                Selecione um produto
+                            </option>
+                        </select>
+                    </div>
 
-            <p id="mensagem-movimentacao" class="mensagem-modal"></p>
+                    <div class="form-grid">
+                        <div class="form-field">
+                            <label
+                                for="movimento-tipo"
+                                class="form-label"
+                            >
+                                Tipo
+                            </label>
 
-            <div class="modal-acoes">
-                <button
-                    type="button"
-                    class="btn-cancelar"
-                    onclick="fecharMovimentacao()">
-                    Cancelar
-                </button>
+                            <select
+                                id="movimento-tipo"
+                                class="form-control"
+                                required
+                            >
+                                <option value="entrada">
+                                    Entrada
+                                </option>
 
-                <button type="submit" class="btn-confirmar">
-                    Confirmar
-                </button>
-            </div>
-        </form>
+                                <option value="saida">
+                                    Saída
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="form-field">
+                            <label
+                                for="movimento-quantidade"
+                                class="form-label"
+                            >
+                                Quantidade
+                            </label>
+
+                            <input
+                                id="movimento-quantidade"
+                                class="form-control"
+                                type="number"
+                                min="1"
+                                step="1"
+                                value="1"
+                                required
+                            >
+                        </div>
+                    </div>
+
+                    <div class="form-field">
+                        <label
+                            for="movimento-motivo"
+                            class="form-label"
+                        >
+                            Motivo
+                        </label>
+
+                        <input
+                            id="movimento-motivo"
+                            class="form-control"
+                            type="text"
+                            maxlength="120"
+                            placeholder="Ex.: reposição de mercadoria"
+                            required
+                        >
+                    </div>
+
+                    <div
+                        id="mensagem-movimentacao"
+                        class="alert"
+                        hidden
+                    ></div>
+                </div>
+
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="button button-secondary"
+                        onclick="fecharMovimentacao()"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="button button-primary"
+                    >
+                        Confirmar movimentação
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
 <script>
-async function carregarEstoque() {
-  try {
-    const req = await fetch("/estoque/variantes");
-    const data = await req.json();
+let estoqueCompleto = [];
 
-    const tbody = document.getElementById("tabela-estoque");
+function formatarMoeda(valor) {
+    return new Intl.NumberFormat(
+        "pt-BR",
+        {
+            style: "currency",
+            currency: "BRL"
+        }
+    ).format(Number(valor || 0));
+}
+
+function atualizarResumoEstoque(dados) {
+    const totalUnidades = dados.reduce(
+        (total, item) =>
+            total + Number(item.estoque || 0),
+        0
+    );
+
+    const itensAtencao = dados.filter(item => {
+        const quantidade = Number(item.estoque || 0);
+        const minimo = Number(item.minimo || 0);
+
+        return (
+            quantidade === 0 ||
+            (minimo > 0 && quantidade <= minimo)
+        );
+    }).length;
+
+    document.getElementById(
+        "metric-variantes"
+    ).textContent = dados.length;
+
+    document.getElementById(
+        "metric-unidades"
+    ).textContent = totalUnidades;
+
+    document.getElementById(
+        "metric-baixo"
+    ).textContent = itensAtencao;
+}
+
+function preencherSelectProdutos(dados) {
+    const select = document.getElementById(
+        "movimento-produto"
+    );
+
+    select.innerHTML = `
+        <option value="">
+            Selecione um produto
+        </option>
+    `;
+
+    dados
+        .slice()
+        .sort((a, b) =>
+            a.nome_produto.localeCompare(b.nome_produto)
+        )
+        .forEach(item => {
+            const option =
+                document.createElement("option");
+
+            option.value = item.variante_id;
+
+            option.textContent =
+                `${item.sku} — ${item.nome_produto} ` +
+                `(Estoque: ${item.estoque})`;
+
+            select.appendChild(option);
+        });
+}
+
+function renderizarEstoque(dados) {
+    const tbody = document.getElementById(
+        "tabela-estoque"
+    );
+
     tbody.innerHTML = "";
 
-    const selectProduto = document.getElementById("movimento-produto");
+    if (dados.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7">
+                    <div class="empty-state">
+                        <h3 class="empty-state-title">
+                            Nenhum produto encontrado
+                        </h3>
 
-    selectProduto.innerHTML = `
-        <option value="">Selecione um produto</option>
-`;
+                        <p class="empty-state-text">
+                            Não há itens correspondentes
+                            à pesquisa.
+                        </p>
+                    </div>
+                </td>
+            </tr>
+        `;
 
-    data.forEach(v => {
-      const tr = document.createElement("tr");
-      
-tr.innerHTML = `
-    <td><span class="sku-tag">${v.sku}</span></td>
-    <td>${v.nome_produto || v.produto_id}</td>
-    <td>${v.altura_cm || ""} x ${v.largura_cm || ""}</td>
-    <td>${v.cor || ""} / ${v.moldura || ""}</td>
-    <td>R$ ${v.preco_base}</td>
-    <td id="qtd-${v.variante_id}" class="qtd-destaque">${v.estoque}</td>
-`;
+        return;
+    }
 
-const option = document.createElement("option");
+    dados.forEach(item => {
+        const quantidade = Number(item.estoque || 0);
+        const minimo = Number(item.minimo || 0);
 
-option.value = v.variante_id;
-option.textContent =
-    `${v.sku} - ${v.nome_produto} (Estoque: ${v.estoque})`;
+        let classeStatus = "badge-success";
+        let textoStatus = "Disponível";
 
-selectProduto.appendChild(option);
-      
-      tbody.appendChild(tr);
+        if (quantidade === 0) {
+            classeStatus = "badge-danger";
+            textoStatus = "Sem estoque";
+
+        } else if (minimo > 0 && quantidade <= minimo) {
+            classeStatus = "badge-warning";
+            textoStatus = "Estoque baixo";
+        }
+
+        const dimensoes =
+            item.altura_cm && item.largura_cm
+                ? `${item.altura_cm} × ${item.largura_cm} cm`
+                : "Não informado";
+
+        const acabamento = [
+            item.cor,
+            item.moldura
+        ].filter(Boolean).join(" / ") || "Padrão";
+
+        const linha = document.createElement("tr");
+
+        linha.innerHTML = `
+            <td>
+                <span class="inventory-sku">
+                    ${item.sku}
+                </span>
+            </td>
+
+            <td>
+                <div class="inventory-product">
+                    <span class="inventory-product-name">
+                        ${item.nome_produto}
+                    </span>
+
+                    <span class="inventory-product-detail">
+                        ${item.formato || "Formato não informado"}
+                    </span>
+                </div>
+            </td>
+
+            <td>${dimensoes}</td>
+
+            <td>${acabamento}</td>
+
+            <td class="inventory-price">
+                ${formatarMoeda(item.preco_base)}
+            </td>
+
+            <td class="inventory-quantity">
+                ${quantidade}
+            </td>
+
+            <td>
+                <span class="badge ${classeStatus}">
+                    ${textoStatus}
+                </span>
+            </td>
+        `;
+
+        tbody.appendChild(linha);
     });
-  } catch (error) {
-    console.error("Erro ao carregar estoque:", error);
-  }
 }
 
-function abrirMovimentacao() {
-    const modal = document.getElementById("modal-movimentacao");
+async function carregarEstoque() {
+    try {
+        const resposta = await fetch(
+            "/estoque/variantes"
+        );
 
-    document.getElementById("movimento-produto").value = "";
-    document.getElementById("movimento-tipo").value = "entrada";
-    document.getElementById("movimento-quantidade").value = 1;
-    document.getElementById("movimento-motivo").value = "";
+        const dados = await resposta.json();
 
-    modal.classList.add("ativo");
-}
+        if (!resposta.ok) {
+            throw new Error(
+                dados.mensagem ||
+                "Não foi possível carregar o estoque"
+            );
+        }
 
-function fecharMovimentacao() {
-    const modal = document.getElementById("modal-movimentacao");
-    modal.classList.remove("ativo");
+        estoqueCompleto = dados;
+
+        atualizarResumoEstoque(dados);
+        preencherSelectProdutos(dados);
+        renderizarEstoque(dados);
+
+    } catch (erro) {
+        document.getElementById(
+            "tabela-estoque"
+        ).innerHTML = `
+            <tr>
+                <td colspan="7">
+                    <div class="empty-state">
+                        <h3 class="empty-state-title">
+                            Erro ao carregar estoque
+                        </h3>
+
+                        <p class="empty-state-text">
+                            ${erro.message}
+                        </p>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
 }
 
 document
+    .getElementById("inventory-search")
+    .addEventListener("input", evento => {
+        const pesquisa = evento.target.value
+            .trim()
+            .toLowerCase();
+
+        const filtrados = estoqueCompleto.filter(item => {
+            const texto = [
+                item.sku,
+                item.nome_produto,
+                item.formato,
+                item.cor,
+                item.moldura
+            ].filter(Boolean).join(" ").toLowerCase();
+
+            return texto.includes(pesquisa);
+        });
+
+        renderizarEstoque(filtrados);
+    });
+
+function abrirMovimentacao() {
+    const modal = document.getElementById(
+        "modal-movimentacao"
+    );
+
+    document.getElementById(
+        "form-movimentacao"
+    ).reset();
+
+    document.getElementById(
+        "movimento-quantidade"
+    ).value = 1;
+
+    document.getElementById(
+        "mensagem-movimentacao"
+    ).hidden = true;
+
+    modal.classList.add("is-open");
+
+    document.getElementById(
+        "movimento-produto"
+    ).focus();
+}
+
+function fecharMovimentacao() {
+    document.getElementById(
+        "modal-movimentacao"
+    ).classList.remove("is-open");
+}
+
+document
+    .getElementById("modal-movimentacao")
+    .addEventListener("click", evento => {
+        if (evento.target.id === "modal-movimentacao") {
+            fecharMovimentacao();
+        }
+    });
+
+document.addEventListener("keydown", evento => {
+    if (evento.key === "Escape") {
+        fecharMovimentacao();
+    }
+});
+
+document
     .getElementById("form-movimentacao")
-    .addEventListener("submit", async function(event) {
-        event.preventDefault();
+    .addEventListener("submit", async function(evento) {
+        evento.preventDefault();
 
         const varianteId = Number(
-            document.getElementById("movimento-produto").value
+            document.getElementById(
+                "movimento-produto"
+            ).value
         );
 
-        const tipo = document.getElementById("movimento-tipo").value;
+        const tipo = document.getElementById(
+            "movimento-tipo"
+        ).value;
 
         const quantidade = Number(
-            document.getElementById("movimento-quantidade").value
+            document.getElementById(
+                "movimento-quantidade"
+            ).value
         );
 
         const motivo = document
@@ -439,27 +639,45 @@ document
             "mensagem-movimentacao"
         );
 
-        const botao = this.querySelector(".btn-confirmar");
+        const botao = this.querySelector(
+            'button[type="submit"]'
+        );
 
-        mensagem.className = "mensagem-modal";
-        mensagem.textContent = "";
+        mensagem.hidden = true;
 
         if (!varianteId) {
-            mensagem.className = "mensagem-modal erro";
-            mensagem.textContent = "Selecione um produto.";
+            mensagem.className =
+                "alert alert-danger";
+
+            mensagem.textContent =
+                "Selecione um produto.";
+
+            mensagem.hidden = false;
             return;
         }
 
-        if (!Number.isInteger(quantidade) || quantidade <= 0) {
-            mensagem.className = "mensagem-modal erro";
+        if (
+            !Number.isInteger(quantidade) ||
+            quantidade <= 0
+        ) {
+            mensagem.className =
+                "alert alert-danger";
+
             mensagem.textContent =
                 "Informe uma quantidade inteira maior que zero.";
+
+            mensagem.hidden = false;
             return;
         }
 
         if (!motivo) {
-            mensagem.className = "mensagem-modal erro";
-            mensagem.textContent = "Informe o motivo.";
+            mensagem.className =
+                "alert alert-danger";
+
+            mensagem.textContent =
+                "Informe o motivo da movimentação.";
+
+            mensagem.hidden = false;
             return;
         }
 
@@ -467,50 +685,65 @@ document
         botao.textContent = "Salvando...";
 
         try {
-            const req = await fetch(`/estoque/${tipo}_sku`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    variante_id: varianteId,
-                    quantidade: quantidade,
-                    motivo: motivo
-                })
-            });
+            const resposta = await fetch(
+                `/estoque/${tipo}_sku`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        variante_id: varianteId,
+                        quantidade: quantidade,
+                        motivo: motivo
+                    })
+                }
+            );
 
-            const res = await req.json();
+            const resultado = await resposta.json();
 
-            if (!req.ok || res.status !== "ok") {
+            if (
+                !resposta.ok ||
+                resultado.status !== "ok"
+            ) {
                 throw new Error(
-                    res.mensagem ||
-                    res.error ||
-                    "Não foi possível movimentar o estoque."
+                    resultado.mensagem ||
+                    resultado.error ||
+                    "Não foi possível movimentar o estoque"
                 );
             }
 
             await carregarEstoque();
 
-            mensagem.className = "mensagem-modal sucesso";
+            mensagem.className =
+                "alert alert-success";
+
             mensagem.textContent =
-                `Estoque atualizado para ${res.estoque_atual}.`;
+                `Estoque atualizado para ` +
+                `${resultado.estoque_atual}.`;
+
+            mensagem.hidden = false;
 
             setTimeout(() => {
                 fecharMovimentacao();
             }, 900);
 
-        } catch (error) {
-            mensagem.className = "mensagem-modal erro";
-            mensagem.textContent = error.message;
+        } catch (erro) {
+            mensagem.className =
+                "alert alert-danger";
+
+            mensagem.textContent = erro.message;
+            mensagem.hidden = false;
 
         } finally {
             botao.disabled = false;
-            botao.textContent = "Confirmar";
+            botao.textContent =
+                "Confirmar movimentação";
         }
     });
 
-// Inicia o carregamento
 carregarEstoque();
 </script>
+
 </body>
 </html>

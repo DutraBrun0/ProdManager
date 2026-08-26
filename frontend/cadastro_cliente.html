@@ -3,102 +3,346 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>Criar conta - ProdManager</title>
 
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='login.css') }}">
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='base.css') }}"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='auth.css') }}"
+    >
 </head>
 
-<body>
+<body class="auth-page">
 
-<div class="card">
-    <h2>Criar conta</h2>
+<main class="auth-container">
 
-    <form id="cadastro-form">
-        <label for="nome">Nome</label>
-        <input
-            type="text"
-            id="nome"
-            placeholder="Seu nome"
-            required
+    <section class="auth-presentation">
+        <a
+            href="{{ url_for('index') }}"
+            class="auth-brand"
         >
-
-        <label for="email">E-mail</label>
-        <input
-            type="email"
-            id="email"
-            placeholder="seu@email.com"
-            required
-        >
-
-        <label for="senha">Senha</label>
-        <input
-            type="password"
-            id="senha"
-            placeholder="Mínimo de 8 caracteres"
-            minlength="8"
-            required
-        >
-
-        <label for="confirmar-senha">Confirmar senha</label>
-        <input
-            type="password"
-            id="confirmar-senha"
-            placeholder="Repita sua senha"
-            minlength="8"
-            required
-        >
-
-        <span id="senha-msg"></span>
-
-        <button type="submit">Criar conta</button>
-    </form>
-
-    <div class="links">
-        <a href="{{ url_for('index') }}">
-            Voltar para o login
+            <span class="auth-brand-symbol">P</span>
+            ProdManager
         </a>
-    </div>
-</div>
+
+        <div class="auth-presentation-content">
+            <h1>
+                Acompanhe seus pedidos de maneira simples.
+            </h1>
+
+            <p>
+                Crie sua conta de cliente para consultar o
+                catálogo e acompanhar a situação dos seus
+                pedidos.
+            </p>
+
+            <div class="auth-benefits">
+                <div class="auth-benefit">
+                    <span class="auth-benefit-icon">✓</span>
+                    Consulte os produtos disponíveis
+                </div>
+
+                <div class="auth-benefit">
+                    <span class="auth-benefit-icon">✓</span>
+                    Acompanhe o status dos pedidos
+                </div>
+
+                <div class="auth-benefit">
+                    <span class="auth-benefit-icon">✓</span>
+                    Histórico vinculado à sua conta
+                </div>
+            </div>
+        </div>
+
+        <span class="auth-presentation-footer">
+            Área exclusiva para clientes
+        </span>
+    </section>
+
+    <section class="auth-content">
+        <div class="auth-card">
+
+            <div class="auth-header">
+                <span class="auth-eyebrow">
+                    Cadastro de cliente
+                </span>
+
+                <h2 class="auth-title">
+                    Criar sua conta
+                </h2>
+
+                <p class="auth-description">
+                    Preencha seus dados para acessar o catálogo
+                    e seus pedidos.
+                </p>
+            </div>
+
+            <form
+                id="cadastro-form"
+                class="auth-form"
+            >
+                <div
+                    id="cadastro-message"
+                    class="auth-message"
+                    role="alert"
+                ></div>
+
+                <div class="auth-field">
+                    <label
+                        for="nome"
+                        class="auth-label"
+                    >
+                        Nome completo
+                    </label>
+
+                    <input
+                        type="text"
+                        id="nome"
+                        class="auth-input"
+                        placeholder="Digite seu nome"
+                        autocomplete="name"
+                        minlength="3"
+                        required
+                    >
+                </div>
+
+                <div class="auth-field">
+                    <label
+                        for="email"
+                        class="auth-label"
+                    >
+                        E-mail
+                    </label>
+
+                    <input
+                        type="email"
+                        id="email"
+                        class="auth-input"
+                        placeholder="seu@email.com"
+                        autocomplete="email"
+                        required
+                    >
+                </div>
+
+                <div class="auth-field">
+                    <label
+                        for="senha"
+                        class="auth-label"
+                    >
+                        Senha
+                    </label>
+
+                    <div class="auth-password">
+                        <input
+                            type="password"
+                            id="senha"
+                            class="auth-input"
+                            placeholder="Mínimo de 8 caracteres"
+                            autocomplete="new-password"
+                            minlength="8"
+                            required
+                        >
+
+                        <button
+                            type="button"
+                            class="auth-password-toggle"
+                            data-password-target="senha"
+                        >
+                            Mostrar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="auth-field">
+                    <label
+                        for="confirmar-senha"
+                        class="auth-label"
+                    >
+                        Confirmar senha
+                    </label>
+
+                    <div class="auth-password">
+                        <input
+                            type="password"
+                            id="confirmar-senha"
+                            class="auth-input"
+                            placeholder="Digite a senha novamente"
+                            autocomplete="new-password"
+                            minlength="8"
+                            required
+                        >
+
+                        <button
+                            type="button"
+                            class="auth-password-toggle"
+                            data-password-target="confirmar-senha"
+                        >
+                            Mostrar
+                        </button>
+                    </div>
+                </div>
+
+                <button
+                    type="submit"
+                    id="cadastro-button"
+                    class="auth-submit"
+                >
+                    Criar conta
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                Já possui uma conta?
+
+                <a href="{{ url_for('index') }}">
+                    Voltar para o login
+                </a>
+            </div>
+
+        </div>
+    </section>
+
+</main>
 
 <script>
 const formulario = document.getElementById("cadastro-form");
-const mensagem = document.getElementById("senha-msg");
+const nomeInput = document.getElementById("nome");
+const emailInput = document.getElementById("email");
+const senhaInput = document.getElementById("senha");
+const confirmarSenhaInput =
+    document.getElementById("confirmar-senha");
 
-formulario.addEventListener("submit", async (evento) => {
+const mensagem =
+    document.getElementById("cadastro-message");
+
+const cadastroButton =
+    document.getElementById("cadastro-button");
+
+function exibirMensagem(texto, tipo) {
+    mensagem.textContent = texto;
+
+    mensagem.className =
+        `auth-message auth-message-${tipo} is-visible`;
+}
+
+function limparMensagem() {
+    mensagem.textContent = "";
+    mensagem.className = "auth-message";
+}
+
+document
+    .querySelectorAll("[data-password-target]")
+    .forEach(botao => {
+        botao.addEventListener("click", () => {
+            const campo = document.getElementById(
+                botao.dataset.passwordTarget
+            );
+
+            const senhaVisivel = campo.type === "text";
+
+            campo.type = senhaVisivel
+                ? "password"
+                : "text";
+
+            botao.textContent = senhaVisivel
+                ? "Mostrar"
+                : "Ocultar";
+        });
+    });
+
+confirmarSenhaInput.addEventListener("input", () => {
+    if (
+        confirmarSenhaInput.value &&
+        senhaInput.value !== confirmarSenhaInput.value
+    ) {
+        exibirMensagem(
+            "As senhas ainda não coincidem.",
+            "error"
+        );
+    } else {
+        limparMensagem();
+    }
+});
+
+formulario.addEventListener("submit", async evento => {
     evento.preventDefault();
+    limparMensagem();
 
-    const nome = document.getElementById("nome").value.trim();
-    const email = document.getElementById("email").value.trim();
-    const senha = document.getElementById("senha").value;
-    const confirmarSenha =
-        document.getElementById("confirmar-senha").value;
+    const nome = nomeInput.value.trim();
+    const email = emailInput.value.trim();
+    const senha = senhaInput.value;
+    const confirmarSenha = confirmarSenhaInput.value;
 
-    if (senha !== confirmarSenha) {
-        mensagem.textContent = "As senhas não coincidem";
+    if (senha.length < 8) {
+        exibirMensagem(
+            "A senha precisa ter pelo menos 8 caracteres.",
+            "error"
+        );
+
         return;
     }
 
-    const resposta = await fetch("/cliente/register", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            nome: nome,
-            email: email,
-            senha: senha
-        })
-    });
+    if (senha !== confirmarSenha) {
+        exibirMensagem(
+            "As senhas não coincidem.",
+            "error"
+        );
 
-    const resultado = await resposta.json();
+        return;
+    }
 
-    alert(resultado.mensagem);
+    cadastroButton.disabled = true;
+    cadastroButton.textContent = "Criando conta...";
 
-    if (resposta.ok) {
-        window.location.href = "/";
+    try {
+        const resposta = await fetch("/cliente/register", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                nome,
+                email,
+                senha
+            })
+        });
+
+        const resultado = await resposta.json();
+
+        if (!resposta.ok || resultado.status === "erro") {
+            throw new Error(
+                resultado.mensagem ||
+                "Não foi possível criar sua conta."
+            );
+        }
+
+        exibirMensagem(
+            resultado.mensagem ||
+            "Conta criada com sucesso!",
+            "success"
+        );
+
+        cadastroButton.textContent = "Conta criada";
+
+        setTimeout(() => {
+            window.location.href = "/";
+        }, 1000);
+
+    } catch (erro) {
+        exibirMensagem(erro.message, "error");
+
+        cadastroButton.disabled = false;
+        cadastroButton.textContent = "Criar conta";
     }
 });
 </script>
