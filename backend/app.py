@@ -798,6 +798,55 @@ def meus_pedidos_api():
 
     return jsonify(resultado)
 
+@app.route("/pedido/<int:pedido_id>/status", methods=["PATCH"])
+@api_login_required
+@api_roles_required("admin", "comercial")
+def atualizar_status_pedido(pedido_id):
+    data = request.get_json(silent=True) or {}
+    novo_status = data.get("status")
+
+    status_permitidos = {
+        "criado",
+        "aprovado",
+        "em_producao",
+        "em_logistica",
+        "entregue",
+        "finalizado"
+    }
+
+    if novo_status not in status_permitidos:
+        return jsonify({
+            "status": "erro",
+            "mensagem": "Status de pedido inválido"
+        }), 400
+
+    pedido = db.session.get(Pedido, pedido_id)
+
+    if not pedido:
+        return jsonify({
+            "status": "erro",
+            "mensagem": "Pedido não encontrado"
+        }), 404
+
+    try:
+        pedido.status = novo_status
+        db.session.commit()
+
+        return jsonify({
+            "status": "ok",
+            "mensagem": "Status atualizado com sucesso",
+            "pedido_id": pedido.id,
+            "novo_status": pedido.status
+        })
+
+    except Exception:
+        db.session.rollback()
+
+        return jsonify({
+            "status": "erro",
+            "mensagem": "Não foi possível atualizar o status"
+        }), 500
+
 @app.route('/pedido/listar', methods=['GET'])
 @api_login_required
 @api_roles_required("admin", "comercial")
@@ -821,6 +870,7 @@ def listar_pedidos():
         resultado.append({
             "id": p.id,
             "cliente_nome": p.cliente_nome,
+            "status": p.status,
             "total": float(p.total or 0),
             "created_at": p.created_at.strftime("%Y-%m-%d %H:%M:%S") if p.created_at else None,
             "itens": itens_processados

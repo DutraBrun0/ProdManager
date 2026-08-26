@@ -193,11 +193,12 @@
                         <th>Cliente</th>
                         <th>Resumo</th>
                         <th>Total</th>
+                        <th>Status</th>
                         <th>Data</th>
                     </tr>
                 </thead>
                 <tbody id="lista-pedidos-body">
-                    <tr><td colspan="5" style="text-align:center; padding:20px; color:#999;">Carregando...</td></tr>
+                    <tr><td colspan="6" style="text-align:center; padding:20px; color:#999;">Carregando...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -263,6 +264,27 @@ if (clientes.length === 0) {
     }
 }
 
+function montarOpcoesStatus(statusAtual) {
+    const status = [
+        ["criado", "Criado"],
+        ["aprovado", "Aprovado"],
+        ["em_producao", "Em produção"],
+        ["em_logistica", "Em logística"],
+        ["entregue", "Entregue"],
+        ["finalizado", "Finalizado"]
+    ];
+
+    return status.map(([valor, texto]) => {
+        const selecionado =
+            valor === statusAtual ? "selected" : "";
+
+        return `
+            <option value="${valor}" ${selecionado}>
+                ${texto}
+            </option>
+        `;
+    }).join("");
+}
 // 2. Carregar Tabela de Pedidos
 async function carregarTabelaFaturamentos() {
     try {
@@ -272,7 +294,7 @@ async function carregarTabelaFaturamentos() {
         tbody.innerHTML = "";
 
         if (!pedidos || pedidos.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:20px; color:#999;'>Nenhuma venda registrada.</td></tr>";
+            tbody.innerHTML = "<tr><td colspan='6' style='text-align:center; padding:20px; color:#999;'>Nenhuma venda registrada.</td></tr>";
             return;
         }
 
@@ -292,8 +314,23 @@ async function carregarTabelaFaturamentos() {
                 <td><span class="id-tag">#${p.id}</span></td>
                 <td style="font-weight:500;">${p.cliente_nome}</td>
                 <td style="font-size:0.85rem; color:#666;">${resumo}</td>
-                <td class="price-tag">R$ ${parseFloat(p.total).toFixed(2)}</td>
-                <td style="font-size:0.8rem; color:#999;">${dataFmt}</td>
+                <td class="price-tag">
+    R$ ${parseFloat(p.total).toFixed(2)}
+</td>
+
+<td>
+    <select
+        class="status-select"
+        data-status-anterior="${p.status}"
+        onchange="atualizarStatusPedido(${p.id}, this)"
+    >
+        ${montarOpcoesStatus(p.status)}
+    </select>
+</td>
+
+<td style="font-size:0.8rem; color:#999;">
+    ${dataFmt}
+</td>
             `;
             tbody.appendChild(tr);
         });
@@ -370,6 +407,47 @@ function checkProdutoEstoque() {
 }
 document.getElementById("fatura-produto").addEventListener("change", checkProdutoEstoque);
 
+
+async function atualizarStatusPedido(pedidoId, campo) {
+    const statusAnterior = campo.dataset.statusAnterior;
+    const novoStatus = campo.value;
+
+    campo.disabled = true;
+
+    try {
+        const resposta = await fetch(
+            `/pedido/${pedidoId}/status`,
+            {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    status: novoStatus
+                })
+            }
+        );
+
+        const resultado = await resposta.json();
+
+        if (!resposta.ok) {
+            throw new Error(
+                resultado.mensagem ||
+                "Não foi possível atualizar"
+            );
+        }
+
+        campo.dataset.statusAnterior = novoStatus;
+        alert(resultado.mensagem);
+
+    } catch (erro) {
+        campo.value = statusAnterior;
+        alert("Erro: " + erro.message);
+
+    } finally {
+        campo.disabled = false;
+    }
+}
 // Iniciar
 document.addEventListener('DOMContentLoaded', () => {
     carregarDados();
