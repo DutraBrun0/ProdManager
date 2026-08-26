@@ -50,7 +50,9 @@ body {
     font-family: 'Roboto', sans-serif;
 }
 
-.card input {
+
+.card input,
+.card select {
     padding: 10px 12px;
     margin-bottom: 15px;
     border-radius: 8px;
@@ -59,9 +61,12 @@ body {
     outline: none;
     transition: 0.3s;
     font-family: 'Roboto', sans-serif;
+    background-color: #ffffff;
+    color: #333333;
 }
 
-.card input:focus {
+.card input:focus,
+.card select:focus {
     border-color: #2A5298;
     box-shadow: 0 0 5px rgba(42, 82, 152, 0.5);
 }

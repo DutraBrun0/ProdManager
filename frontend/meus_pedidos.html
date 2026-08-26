@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Meus pedidos - ProdManager</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='menu.css') }}">
+</head>
+
+<body>
+
+<header class="app-header">
+    <h1>
+        <a href="{{ url_for('inicio_page') }}" class="app-brand">
+            ProdManager
+        </a>
+    </h1>
+
+    {% include "_menu.html" %}
+</header>
+
+<main>
+    <section>
+        <h2>Meus pedidos</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Pedido</th>
+                    <th>Produtos</th>
+                    <th>Status</th>
+                    <th>Total</th>
+                    <th>Data</th>
+                </tr>
+            </thead>
+
+            <tbody id="tabela-pedidos">
+                <tr>
+                    <td colspan="5">Carregando pedidos...</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+</main>
+
+<script>
+const nomesStatus = {
+    criado: "Criado",
+    aprovado: "Aprovado",
+    em_producao: "Em produção",
+    em_logistica: "Em logística",
+    entregue: "Entregue",
+    finalizado: "Finalizado"
+};
+
+async function carregarMeusPedidos() {
+    const tbody = document.getElementById("tabela-pedidos");
+
+    try {
+        const resposta = await fetch("/api/meus_pedidos");
+        const pedidos = await resposta.json();
+
+        if (!resposta.ok) {
+            throw new Error(
+                pedidos.mensagem || "Erro ao carregar pedidos"
+            );
+        }
+
+        tbody.innerHTML = "";
+
+        if (pedidos.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5">
+                        Você ainda não possui pedidos.
+                    </td>
+                </tr>
+            `;
+
+            return;
+        }
+
+        pedidos.forEach(pedido => {
+            const produtos = pedido.itens
+                .map(item => {
+                    return `${item.quantidade}x ${item.produto}`;
+                })
+                .join("<br>");
+
+            const linha = document.createElement("tr");
+
+            linha.innerHTML = `
+                <td>#${pedido.id}</td>
+                <td>${produtos}</td>
+                <td>${nomesStatus[pedido.status] || pedido.status}</td>
+                <td>R$ ${pedido.total.toFixed(2)}</td>
+                <td>${pedido.created_at || "-"}</td>
+            `;
+
+            tbody.appendChild(linha);
+        });
+
+    } catch (erro) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5">
+                    ${erro.message}
+                </td>
+            </tr>
+        `;
+    }
+}
+
+carregarMeusPedidos();
+</script>
+
+</body>
+</html>

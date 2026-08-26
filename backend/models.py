@@ -122,6 +122,11 @@ class Pedido(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     cliente_nome = db.Column(db.String(255), nullable=False)
     cliente_contato = db.Column(db.String(255), nullable=True)
+    cliente_id = db.Column(
+    db.Integer,
+    db.ForeignKey("usuario.id"),
+    nullable=True
+)
     status = db.Column(db.Enum('criado','aprovado','em_producao','em_logistica','entregue','finalizado'),
                             default='criado', nullable=False)
     total = db.Column(db.Numeric(14,2), nullable=False, default=0.00)

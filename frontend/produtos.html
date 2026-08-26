@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>Produtos - Mev Glass OS</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='menu.css') }}">
 <style>
     /* --- ESTILO CLEAN & SUAVE (ATUALIZADO) --- */
     :root {
@@ -202,15 +203,14 @@
 </head>
 
 <body>
-<header>
-<h1><a href="{{ url_for('inicio_page') }}">prodmanager</a></h1>
-  <nav>
-    <a href="{{ url_for('produtos_page') }}">Produtos</a>
-    <a href="{{ url_for('clientes_page') }}">Clientes</a>
-    <a href="{{url_for('lista_cliente_page')}}">Lista Clientes</a>
-    <a href="{{ url_for('estoque_page') }}">Estoque</a>
-    <a href="{{ url_for('faturamento_page') }}">Faturamento</a>
-  </nav>
+<header class="app-header">
+    <h1>
+        <a href="{{ url_for('inicio_page') }}" class="app-brand">
+            prodmanager
+        </a>
+    </h1>
+
+    {% include "_menu.html" %}
 </header>
 
 <main>

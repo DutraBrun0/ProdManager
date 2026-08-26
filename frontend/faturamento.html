@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>Faturamento - Mev Glass OS</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='menu.css') }}">
 <style>
     /* --- ESTILO CLEAN & SUAVE (Layout 2 Colunas) --- */
     :root {
@@ -138,15 +139,14 @@
 </head>
 <body>
 
-<header>
-    <h1><a href="{{ url_for('inicio_page') }}">prodmanager</a></h1>
-    <nav>
-        <a href="{{ url_for('produtos_page') }}">Produtos</a>
-        <a href="{{ url_for('clientes_page') }}">Cadastrar Cliente</a>
-        <a href="{{url_for('lista_cliente_page')}}">Lista Clientes</a>
-        <a href="{{ url_for('estoque_page') }}">Estoque</a>
-        <a href="{{ url_for('faturamento_page') }}">Faturamento</a>
-    </nav>
+<header class="app-header">
+    <h1>
+        <a href="{{ url_for('inicio_page') }}" class="app-brand">
+            prodmanager
+        </a>
+    </h1>
+
+    {% include "_menu.html" %}
 </header>
 
 <main>
@@ -208,22 +208,34 @@
 // 1. Carregar Clientes (DO LOCALSTORAGE) e Produtos (DA API)
 async function carregarDados() {
     try {
-        // --- AQUI ESTÁ A MÁGICA: LER DO NAVEGADOR ---
-        const clientesLocais = JSON.parse(localStorage.getItem('clientes') || '[]');
-        const clienteSelect = document.getElementById("fatura-cliente");
-        
-        clienteSelect.innerHTML = "<option value=''>Selecione o Cliente</option>";
-        
-        if (clientesLocais.length === 0) {
-            clienteSelect.innerHTML += "<option disabled>Nenhum cliente cadastrado na aba Clientes</option>";
-        } else {
-            clientesLocais.forEach(c => {
-                // Usamos o NOME como valor, pois não temos ID no localstorage
-                clienteSelect.innerHTML += `<option value="${c.nome}">${c.nome}</option>`;
-            });
-        }
+       // --- CARREGAR CLIENTES DO BANCO ---
+const clientesReq = await fetch("/api/clientes");
+const clientes = await clientesReq.json();
 
-        // --- CARREGAR PRODUTOS DA API ---
+if (!clientesReq.ok) {
+    throw new Error(
+        clientes.mensagem || "Não foi possível carregar os clientes"
+    );
+}
+
+const clienteSelect = document.getElementById("fatura-cliente");
+
+clienteSelect.innerHTML =
+    "<option value=''>Selecione o cliente</option>";
+
+if (clientes.length === 0) {
+    clienteSelect.innerHTML +=
+        "<option disabled>Nenhum cliente cadastrado</option>";
+} else {
+    clientes.forEach(cliente => {
+        const option = document.createElement("option");
+
+        option.value = cliente.id;
+        option.textContent = `${cliente.nome} — ${cliente.email}`;
+
+        clienteSelect.appendChild(option);
+    });
+}
         const produtosReq = await fetch("/produto/catalogo");
         const produtos = await produtosReq.json();
         const produtoSelect = document.getElementById("fatura-produto");
@@ -294,12 +306,12 @@ async function carregarTabelaFaturamentos() {
 document.getElementById("faturamento-form").addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const clienteNome = document.getElementById("fatura-cliente").value; // Agora pegamos o NOME
+    const clienteId = document.getElementById("fatura-cliente").value; // Agora pegamos o NOME
     const produtoSelect = document.getElementById("fatura-produto");
     const varianteId = produtoSelect.value;
     const quantidade = parseInt(document.getElementById("fatura-quantidade").value);
 
-    if (!clienteNome || !varianteId || !quantidade) {
+    if (!clienteId || !varianteId || !quantidade) {
         alert("Preencha todos os campos!");
         return;
     }
@@ -313,12 +325,11 @@ document.getElementById("faturamento-form").addEventListener("submit", async (e)
     }
 
     const payload = {
-        cliente_nome: clienteNome, // Enviando o NOME para o backend
+        cliente_id: parseInt(clienteId),
         itens: [{
-            variante_id: varianteId,
-            quantidade: quantidade,
-            preco_unit: preco
-        }]
+            variante_id: parseInt(varianteId),
+            quantidade: quantidade
+    }]
     };
 
     try {

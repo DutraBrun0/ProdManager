@@ -112,32 +112,39 @@ def register_page():
 # Rotas que não mudam (mantidas por segurança)
 @app.route("/produtos")
 @page_login_required
+@page_roles_required("admin", "comercial")
 def produtos_page():
     return render_template("produtos.html")
 
 @app.route("/clientes")
 @page_login_required
-@page_roles_required("admin")
+@page_roles_required("admin", "comercial")
 def clientes_page():
     return render_template("clientes.html")
 
 @app.route("/lista_cliente")
 @page_login_required
-@page_roles_required("admin")
+@page_roles_required("admin", "comercial")
 def lista_cliente_page():
     return render_template("lista_clientes.html")
 
 @app.route("/estoque")
 @page_login_required
-@page_roles_required("admin")
+@page_roles_required("admin", "estoque")
 def estoque_page():
     return render_template("estoque.html")
 
 @app.route("/faturamento")
 @page_login_required
-@page_roles_required("admin")
+@page_roles_required("admin", "comercial")
 def faturamento_page():
     return render_template("faturamento.html")
+
+@app.route("/meus_pedidos")
+@page_login_required
+@page_roles_required("cliente")
+def meus_pedidos_page():
+    return render_template("meus_pedidos.html")
 
 # -------------------
 # Util: gerar SKU simples
@@ -165,32 +172,66 @@ def gerar_sku_from_fields(produto_linha: str, altura=None, largura=None, cor=Non
 @api_login_required
 @api_roles_required("admin")
 def register():
-    data = request.get_json()
-    nome = data.get("nome")
-    email = data.get("email")
-    senha = data.get("senha")
+    data = request.get_json(silent=True) or {}
 
-    if not email or not senha:
-        return jsonify(status="erro", mensagem="Preencha todos os campos"), 400
+    nome = (data.get("nome") or "").strip()
+    email = (data.get("email") or "").strip().lower()
+    senha = data.get("senha") or ""
+    perfil = (data.get("perfil") or "").strip().lower()
 
-    if Usuario.query.filter_by(email=email.lower()).first():
-        return jsonify(status="erro", mensagem="E-mail já cadastrado"), 400
+    perfis_permitidos = {
+        "cliente",
+        "comercial",
+        "estoque"
+    }
+
+    if not nome or not email or not senha or not perfil:
+        return jsonify(
+            status="erro",
+            mensagem="Preencha todos os campos"
+        ), 400
+
+    if perfil not in perfis_permitidos:
+        return jsonify(
+            status="erro",
+            mensagem="Perfil de usuário inválido"
+        ), 400
+
+    if len(senha) < 8:
+        return jsonify(
+            status="erro",
+            mensagem="A senha deve possuir pelo menos 8 caracteres"
+        ), 400
+
+    if Usuario.query.filter_by(email=email).first():
+        return jsonify(
+            status="erro",
+            mensagem="E-mail já cadastrado"
+        ), 400
 
     try:
-        user = Usuario(
-            nome=nome.lower() if nome else None,
-            perfil="cliente",
-            email=email.lower(),
+        usuario = Usuario(
+            nome=nome,
+            perfil=perfil,
+            email=email,
             senha_hash=generate_password_hash(senha)
         )
-        db.session.add(user)
+
+        db.session.add(usuario)
         db.session.commit()
-        return jsonify(status="ok", mensagem="Conta criada com sucesso!")
-    except Exception as e:
+
+        return jsonify(
+            status="ok",
+            mensagem="Conta criada com sucesso!"
+        ), 201
+
+    except Exception:
         db.session.rollback()
-        return jsonify(status="erro", mensagem=str(e))
 
-
+        return jsonify(
+            status="erro",
+            mensagem="Não foi possível criar a conta"
+        ), 500
 @app.route("/login", methods=["POST"])
 def login():
     data = request.get_json()
@@ -234,7 +275,7 @@ def logout():
 # -------------------
 @app.route("/produto/variantes", methods=["POST"])
 @api_login_required
-@api_roles_required("admin")
+@api_roles_required("admin", "comercial")
 def criar_produto_com_variantes():
     """
     Cria um novo produto e suas variantes.
@@ -345,7 +386,7 @@ def listar_catalogo():
 
 @app.route("/estoque/variantes", methods=["GET"])
 @api_login_required
-@api_roles_required("admin")
+@api_roles_required("admin", "estoque", "comercial")
 def listar_variantes_estoque():
     variantes = Variante.query.filter_by(ativo=True).all()
     resp = []
@@ -369,7 +410,7 @@ def listar_variantes_estoque():
 
 @app.route("/estoque/entrada_sku", methods=["POST"])
 @api_login_required
-@api_roles_required("admin")
+@api_roles_required("admin", "estoque")
 def entrada_sku():
     data = request.get_json(silent=True) or {}
 
@@ -416,7 +457,7 @@ def entrada_sku():
 
 @app.route("/estoque/saida_sku", methods=["POST"])
 @api_login_required
-@api_roles_required("admin")
+@api_roles_required("admin", "estoque")
 def saida_sku():
     data = request.get_json(silent=True) or {}
 
@@ -494,46 +535,69 @@ def entrada_estoque_compat():
         return jsonify({"status": "erro", "mensagem": str(e)}), 400
 
 
-@app.route('/api/clientes', methods=['GET'])
+@app.route("/api/clientes", methods=["GET"])
 @api_login_required
-@api_roles_required("admin")
+@api_roles_required("admin", "comercial")
 def api_clientes():
-    clientes = Usuario.query.all()
+    clientes = Usuario.query.filter_by(
+        perfil="cliente",
+        ativo=True
+    ).all()
+
     return jsonify([
         {
-            "id": c.id,
-            "nome": c.nome,
-            "email": c.email
+            "id": cliente.id,
+            "nome": cliente.nome,
+            "email": cliente.email
         }
-        for c in clientes
+        for cliente in clientes
     ])
 
 
 @app.route("/pedido/criar", methods=["POST"])
 @api_login_required
-@api_roles_required("admin")
+@api_roles_required("admin", "comercial")
 def criar_pedido():
     data = request.get_json(silent=True) or {}
 
-    cliente_nome = data.get("cliente_nome")
-
-    if not cliente_nome and data.get("cliente_id"):
-        cliente_nome = f"Cliente ID {data.get('cliente_id')}"
-
+    cliente_id = data.get("cliente_id")
     itens = data.get("itens", [])
 
-    if not cliente_nome:
-        return jsonify({"error": "Nome do cliente é obrigatório"}), 400
+    if not cliente_id:
+        return jsonify({
+            "error": "Selecione um cliente cadastrado"
+        }), 400
+
+    try:
+        cliente_id = int(cliente_id)
+    except (TypeError, ValueError):
+        return jsonify({
+            "error": "Cliente inválido"
+        }), 400
+
+    cliente = Usuario.query.filter_by(
+        id=cliente_id,
+        perfil="cliente",
+        ativo=True
+    ).first()
+
+    if not cliente:
+        return jsonify({
+            "error": "Cliente não encontrado ou inativo"
+        }), 404
 
     if not itens:
-        return jsonify({"error": "Nenhum item no pedido"}), 400
+        return jsonify({
+            "error": "Nenhum item no pedido"
+        }), 400
 
     usuario_responsavel = session["user_id"]
 
     try:
         pedido = Pedido(
-            cliente_nome=cliente_nome,
-            cliente_contato=None,
+            cliente_nome=cliente.nome,
+            cliente_contato=cliente.email,
+            cliente_id=cliente.id,
             status="criado",
             total=0,
             criado_por=usuario_responsavel
@@ -552,11 +616,15 @@ def criar_pedido():
                 quantidade = int(quantidade)
             except (TypeError, ValueError):
                 db.session.rollback()
-                return jsonify({"error": "Quantidade inválida"}), 400
+                return jsonify({
+                    "error": "Quantidade inválida"
+                }), 400
 
             if not variante_id or quantidade <= 0:
                 db.session.rollback()
-                return jsonify({"error": "Dados do item inválidos"}), 400
+                return jsonify({
+                    "error": "Dados do item inválidos"
+                }), 400
 
             variante = Variante.query.filter_by(
                 id=variante_id,
@@ -572,11 +640,11 @@ def criar_pedido():
             preco_unit = variante.preco_base
 
             registrar_saida_variante(
-    variante_id=variante_id,
-    quantidade=quantidade,
-    usuario_id=usuario_responsavel,
-    motivo=f"Venda do pedido #{pedido.id}"
-)
+                variante_id=variante_id,
+                quantidade=quantidade,
+                usuario_id=usuario_responsavel,
+                motivo=f"Venda do pedido #{pedido.id}"
+            )
 
             item_pedido = ItemPedido(
                 pedido_id=pedido.id,
@@ -597,6 +665,7 @@ def criar_pedido():
             "pedido_id": pedido.id,
             "total": float(total_geral)
         })
+
     except ValueError as e:
         db.session.rollback()
 
@@ -609,11 +678,65 @@ def criar_pedido():
 
         return jsonify({
             "error": str(e)
-            }), 500
+        }), 500
+
+@app.route("/api/meus_pedidos", methods=["GET"])
+@api_login_required
+@api_roles_required("cliente")
+def meus_pedidos_api():
+    pedidos = Pedido.query.filter_by(
+        cliente_id=session["user_id"]
+    ).order_by(
+        Pedido.created_at.desc()
+    ).all()
+
+    resultado = []
+
+    for pedido in pedidos:
+        itens = []
+
+        for item in pedido.itens:
+            variante = db.session.get(
+                Variante,
+                item.variante_id
+            )
+
+            nome_produto = "Produto indisponível"
+            sku = None
+
+            if variante:
+                sku = variante.sku
+
+                if variante.produto:
+                    nome_produto = (
+                        f"{variante.produto.linha} "
+                        f"{variante.produto.formato}"
+                    )
+
+            itens.append({
+                "sku": sku,
+                "produto": nome_produto,
+                "quantidade": int(item.quantidade),
+                "preco_unit": float(item.preco_unit),
+                "valor_total": float(item.valor_total)
+            })
+
+        resultado.append({
+            "id": pedido.id,
+            "status": pedido.status,
+            "total": float(pedido.total or 0),
+            "created_at": (
+                pedido.created_at.strftime("%d/%m/%Y %H:%M")
+                if pedido.created_at else None
+            ),
+            "itens": itens
+        })
+
+    return jsonify(resultado)
 
 @app.route('/pedido/listar', methods=['GET'])
 @api_login_required
-@api_roles_required("admin")
+@api_roles_required("admin", "comercial")
 def listar_pedidos():
     """ Lista pedidos com itens e informações das variantes. """
     pedidos = Pedido.query.order_by(Pedido.created_at.desc()).limit(100).all()
@@ -665,7 +788,7 @@ def excluir_variante(id):
 
 @app.route("/api/atividades_recentes")
 @api_login_required
-@api_roles_required("admin")
+@api_roles_required("admin", "comercial", "estoque")
 def api_atividades_recentes():
     atividades = []
 

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Dashboard - Mev Glass OS</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='inicio.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='menu.css') }}">
     <style>
         /* CSS Extra para os ícones e botão ver mais */
         .feed-item {
@@ -56,27 +57,23 @@
     </style>
 </head>
 <body>
-<header>
-    <h1>prodmanager</h1>
+    {% set perfil = session.get("user_perfil") %}
+<header class="app-header">
+    <h1>
+        <a href="{{ url_for('inicio_page') }}" class="app-brand">
+            prodmanager
+        </a>
+    </h1>
+
+    {% include "_menu.html" %}
 </header>
 
 <main>
     <section>
         <h2 id="welcome-message">Bem-vindo(a) de volta!</h2>
-        <div class="action-hub">
-            <a href="{{ url_for('faturamento_page') }}" class="action-card">
-                <span>Nova Venda</span>
-            </a>
-            <a href="{{ url_for('produtos_page') }}" class="action-card">
-                <span>Adicionar Produto</span>
-            </a>
-            <a href="{{ url_for('estoque_page') }}" class="action-card">
-                <span>Ver Estoque</span>
-            </a>
-            <a href="{{ url_for('clientes_page') }}" class="action-card">
-                <span>Novo Cliente</span>
-            </a>
-        </div>
+      <span class="profile-role">
+    {{ perfil|capitalize }}
+</span>
     </section>
 
     <div class="dashboard-columns">
@@ -261,7 +258,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     </div>
     <div class="profile-info">
         <span class="profile-name">{{ nome_usuario }}</span>
-        <span class="profile-role">Administrador</span>
+       <span class="profile-role">
+    {{ perfil|capitalize }}
+</span> 
     </div>
     
     <a href="/logout" class="logout-link" title="Sair da conta">
