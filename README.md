@@ -132,7 +132,7 @@ Antes de começar, instale:
 ### 1. Clonar o repositório
 
 ```bash
-git clone https://github.com/DutraBrun0/TCC.git
+git clone https://github.com/DutraBrun0/ProdManager.git
 cd TCC
 ```
 
