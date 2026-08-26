@@ -28,48 +28,69 @@
 </main>
 
 <script>
-  let clientes = JSON.parse(localStorage.getItem('clientes') || '[]');
+async function carregarClientes() {
+    const tbody = document.querySelector(
+        "#clientes-table tbody"
+    );
 
-  function updateClientesTable() {
-    const tbody = document.querySelector('#clientes-table tbody');
-    tbody.innerHTML = '';
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="2">Carregando clientes...</td>
+        </tr>
+    `;
 
-    clientes.forEach((c, index) => {
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td>${c.nome}</td>
-        <td>${c.email}</td>
-      `;
+    try {
+        const resposta = await fetch("/api/clientes");
+        const clientes = await resposta.json();
 
-      // Evento de duplo clique para exclusão
-      row.addEventListener('dblclick', () => {
-        if (confirm(`Deseja excluir o cliente "${c.nome}"?`)) {
-          excluirCliente(index);
+        if (!resposta.ok) {
+            throw new Error(
+                clientes.mensagem ||
+                "Não foi possível carregar os clientes"
+            );
         }
-      });
 
-      tbody.appendChild(row);
-    });
+        tbody.innerHTML = "";
 
-    localStorage.setItem('clientes', JSON.stringify(clientes));
-  }
+        if (clientes.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="2">
+                        Nenhum cliente cadastrado.
+                    </td>
+                </tr>
+            `;
 
-  function excluirCliente(index) {
-    // Remove vendas relacionadas
-    let faturamentos = JSON.parse(localStorage.getItem('faturamentos') || '[]');
-    faturamentos = faturamentos.filter(f => f.cliente !== index);
+            return;
+        }
 
-    faturamentos = faturamentos.map(f => {
-      if (f.cliente > index) f.cliente -= 1;
-      return f;
-    });
+        clientes.forEach(cliente => {
+            const linha = document.createElement("tr");
 
-    localStorage.setItem('faturamentos', JSON.stringify(faturamentos));
-    clientes.splice(index, 1);
-    updateClientesTable();
-  }
+            const colunaNome = document.createElement("td");
+            colunaNome.textContent = cliente.nome;
 
-  updateClientesTable();
+            const colunaEmail = document.createElement("td");
+            colunaEmail.textContent = cliente.email;
+
+            linha.appendChild(colunaNome);
+            linha.appendChild(colunaEmail);
+
+            tbody.appendChild(linha);
+        });
+
+    } catch (erro) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="2">
+                    ${erro.message}
+                </td>
+            </tr>
+        `;
+    }
+}
+
+carregarClientes();
 </script>
 </body>
 </html>

@@ -195,10 +195,11 @@
                         <th>Total</th>
                         <th>Status</th>
                         <th>Data</th>
+                        <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody id="lista-pedidos-body">
-                    <tr><td colspan="6" style="text-align:center; padding:20px; color:#999;">Carregando...</td></tr>
+                    <tr><td colspan="7" style="text-align:center; padding:20px; color:#999;">Carregando...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -265,6 +266,13 @@ if (clientes.length === 0) {
 }
 
 function montarOpcoesStatus(statusAtual) {
+    if (statusAtual === "cancelado") {
+    return `
+        <option value="cancelado" selected>
+            Cancelado
+        </option>
+    `;
+}
     const status = [
         ["criado", "Criado"],
         ["aprovado", "Aprovado"],
@@ -294,7 +302,7 @@ async function carregarTabelaFaturamentos() {
         tbody.innerHTML = "";
 
         if (!pedidos || pedidos.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='6' style='text-align:center; padding:20px; color:#999;'>Nenhuma venda registrada.</td></tr>";
+            tbody.innerHTML = "<tr><td colspan='7' style='text-align:center; padding:20px; color:#999;'>Nenhuma venda registrada.</td></tr>";
             return;
         }
 
@@ -310,28 +318,54 @@ async function carregarTabelaFaturamentos() {
 
             const dataFmt = p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR', {hour: '2-digit', minute:'2-digit'}) : '-';
 
-            tr.innerHTML = `
-                <td><span class="id-tag">#${p.id}</span></td>
-                <td style="font-weight:500;">${p.cliente_nome}</td>
-                <td style="font-size:0.85rem; color:#666;">${resumo}</td>
-                <td class="price-tag">
-    R$ ${parseFloat(p.total).toFixed(2)}
-</td>
+           tr.innerHTML = `
+    <td>
+        <span class="id-tag">#${p.id}</span>
+    </td>
 
-<td>
-    <select
-        class="status-select"
-        data-status-anterior="${p.status}"
-        onchange="atualizarStatusPedido(${p.id}, this)"
-    >
-        ${montarOpcoesStatus(p.status)}
-    </select>
-</td>
+    <td style="font-weight:500;">
+        ${p.cliente_nome}
+    </td>
 
-<td style="font-size:0.8rem; color:#999;">
-    ${dataFmt}
-</td>
-            `;
+    <td style="font-size:0.85rem; color:#666;">
+        ${resumo}
+    </td>
+
+    <td class="price-tag">
+        R$ ${parseFloat(p.total).toFixed(2)}
+    </td>
+
+    <td>
+        <select
+            class="status-select"
+            data-status-anterior="${p.status}"
+            onchange="atualizarStatusPedido(${p.id}, this)"
+            ${p.status === "cancelado" ? "disabled" : ""}
+        >
+            ${montarOpcoesStatus(p.status)}
+        </select>
+    </td>
+
+    <td style="font-size:0.8rem; color:#999;">
+        ${dataFmt}
+    </td>
+
+    <td>
+        ${
+            ["cancelado", "entregue", "finalizado"].includes(p.status)
+                ? "—"
+                : `
+                    <button
+                        type="button"
+                        class="btn-cancelar"
+                        onclick="cancelarPedido(${p.id})"
+                    >
+                        Cancelar
+                    </button>
+                `
+        }
+    </td>
+`;
             tbody.appendChild(tr);
         });
     } catch (e) {
@@ -446,6 +480,43 @@ async function atualizarStatusPedido(pedidoId, campo) {
 
     } finally {
         campo.disabled = false;
+    }
+}
+
+async function cancelarPedido(pedidoId) {
+    const confirmou = confirm(
+        `Deseja cancelar o pedido #${pedidoId}? ` +
+        "Os produtos serão devolvidos ao estoque."
+    );
+
+    if (!confirmou) {
+        return;
+    }
+
+    try {
+        const resposta = await fetch(
+            `/pedido/${pedidoId}/cancelar`,
+            {
+                method: "PATCH"
+            }
+        );
+
+        const resultado = await resposta.json();
+
+        if (!resposta.ok) {
+            throw new Error(
+                resultado.mensagem ||
+                "Não foi possível cancelar"
+            );
+        }
+
+        alert(resultado.mensagem);
+
+        carregarDados();
+        carregarTabelaFaturamentos();
+
+    } catch (erro) {
+        alert("Erro: " + erro.message);
     }
 }
 // Iniciar

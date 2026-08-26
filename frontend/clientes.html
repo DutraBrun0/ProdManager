@@ -129,13 +129,38 @@
         <form id="cliente-form">
             <div class="form-group">
                 <label for="cliente-nome">Nome Completo</label>
-                <input type="text" id="cliente-nome">
+                <input type="text" id="cliente-nome" required>
             </div>
             
             <div class="form-group">
                 <label for="cliente-email">E-mail</label>
                 <input type="email" id="cliente-email" placeholder="cliente@email.com" required>
             </div>
+
+            <div class="form-group">
+    <label for="cliente-senha">Senha temporária</label>
+
+    <input
+        type="password"
+        id="cliente-senha"
+        placeholder="Mínimo de 8 caracteres"
+        minlength="8"
+        required
+    >
+            </div>
+
+        <div class="form-group">
+    <label for="cliente-confirmar-senha">
+        Confirmar senha
+    </label>
+
+    <input
+        type="password"
+        id="cliente-confirmar-senha"
+        placeholder="Repita a senha"
+        minlength="8"
+        required>
+</div>
             
             <button type="submit">Cadastrar Cliente</button>
         </form>
@@ -143,28 +168,72 @@
 </main>
 
 <script>
-  // Lógica original mantida (LocalStorage)
-  let clientes = JSON.parse(localStorage.getItem('clientes') || '[]');
+const formulario = document.getElementById("cliente-form");
+const botao = formulario.querySelector(
+    'button[type="submit"]'
+);
 
-  document.getElementById('cliente-form').addEventListener('submit', e => {
-    e.preventDefault();
+formulario.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
 
-    const nome = document.getElementById('cliente-nome').value.trim();
-    const email = document.getElementById('cliente-email').value.trim();
+    const nome = document
+        .getElementById("cliente-nome")
+        .value
+        .trim();
 
-    if (!nome || !email) {
-      alert("Preencha todos os campos corretamente.");
-      return;
+    const email = document
+        .getElementById("cliente-email")
+        .value
+        .trim();
+
+    const senha = document
+        .getElementById("cliente-senha")
+        .value;
+
+    const confirmarSenha = document
+        .getElementById("cliente-confirmar-senha")
+        .value;
+
+    if (senha !== confirmarSenha) {
+        alert("As senhas não coincidem");
+        return;
     }
 
-    clientes.push({ nome, email });
-    localStorage.setItem('clientes', JSON.stringify(clientes));
+    botao.disabled = true;
+    botao.textContent = "Cadastrando...";
 
-    // Alerta estilizado (simples)
-    alert(`✅ Cliente "${nome}" cadastrado com sucesso!`);
+    try {
+        const resposta = await fetch(
+            "/api/clientes/cadastrar",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    nome: nome,
+                    email: email,
+                    senha: senha
+                })
+            }
+        );
 
-    e.target.reset();
-  });
+        const resultado = await resposta.json();
+
+        alert(resultado.mensagem);
+
+        if (resposta.ok) {
+            formulario.reset();
+        }
+
+    } catch (erro) {
+        alert("Não foi possível conectar ao servidor");
+
+    } finally {
+        botao.disabled = false;
+        botao.textContent = "Cadastrar Cliente";
+    }
+});
 </script>
 
 </body>
