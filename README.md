@@ -60,26 +60,42 @@ As permissões são verificadas no backend. Portanto, esconder uma opção da in
 TCC-1/
 ├── backend/
 │   ├── app.py
+│   ├── create_admin.py
 │   ├── database.py
 │   └── models.py
 ├── frontend/
 │   ├── _menu.html
-│   ├── inicio.html
-│   ├── produtos.html
-│   ├── estoque.html
-│   ├── clientes.html
-│   ├── lista_clientes.html
-│   ├── faturamento.html
-│   ├── catalogo_cliente.html
-│   ├── meus_pedidos.html
-│   ├── login.html
 │   ├── cadastro_cliente.html
+│   ├── catalogo_cliente.html
+│   ├── clientes.html
 │   ├── criar_conta.html
-│   └── arquivos CSS
+│   ├── estoque.html
+│   ├── faturamento.html
+│   ├── inicio.html
+│   ├── lista_clientes.html
+│   ├── login.html
+│   ├── meus_pedidos.html
+│   ├── produtos.html
+│   ├── auth.css
+│   ├── base.css
+│   ├── cliente.css
+│   ├── components.css
+│   ├── dashboard.css
+│   ├── estoque.css
+│   ├── faturamento.css
+│   ├── menu.css
+│   └── produtos.css
+├── tests/
+│   ├── conftest.py
+│   ├── test_auth.py
+│   ├── test_estoque_pedidos.py
+│   └── test_permissions.py
 ├── docs/
 │   └── images/
 ├── .env.example
 ├── .gitignore
+├── pytest.ini
+├── requirements-dev.txt
 ├── requirements.txt
 └── README.md
 ```
@@ -230,6 +246,37 @@ Acesse no navegador:
 ```text
 http://127.0.0.1:5000
 ```
+## Testes automatizados
+
+Os testes utilizam um banco SQLite temporário em memória. Portanto, os dados do MySQL configurado no projeto não são alterados.
+
+Instale as dependências de desenvolvimento:
+
+```bash
+python -m pip install -r requirements-dev.txt
+```
+
+Execute todos os testes:
+
+```bash
+python -m pytest -v
+```
+
+A suíte verifica:
+
+- cadastro público de clientes;
+- bloqueio de e-mails duplicados;
+- login e criação da sessão;
+- rejeição de senha incorreta;
+- redirecionamento de usuários não autenticados;
+- permissões dos diferentes perfis;
+- proteção das movimentações de estoque;
+- entrada e saída de produtos;
+- bloqueio de estoque negativo;
+- criação de pedidos;
+- cálculo do valor total;
+- redução do estoque após uma venda;
+- cancelamento com devolução ao estoque.
 
 ## Segurança
 

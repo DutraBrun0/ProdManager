@@ -9,7 +9,6 @@ from models import (
 import os
 from dotenv import load_dotenv
 import re
-from datetime import datetime
 from functools import wraps
 
 # Diretórios
@@ -927,7 +926,10 @@ def listar_pedidos():
     for p in pedidos:
         itens_processados = []
         for item in p.itens:
-            var = Variante.query.get(item.variante_id)
+            var = db.session.get(
+            Variante,
+            item.variante_id
+)
             itens_processados.append({
                 "variante_id": item.variante_id,
                 "sku": var.sku if var else None,
@@ -952,7 +954,10 @@ def listar_pedidos():
 @api_roles_required("admin")
 def excluir_variante(id):
     try:
-        variante = Variante.query.get(id)
+        variante = db.session.get(
+        Variante,
+        id
+)
         if not variante:
             return jsonify({"status": "erro", "mensagem": "Variante não encontrada"}), 404
         
@@ -1154,7 +1159,10 @@ def api_atividades_recentes():
         nome_exemplo = "Produtos diversos"
         if p.itens:
             primeiro_item = p.itens[0]
-            var = Variante.query.get(primeiro_item.variante_id)
+            var = db.session.get(
+    Variante,
+    primeiro_item.variante_id
+)
             if var and var.produto:
                 nome_exemplo = f"{var.produto.linha}"
             else:
@@ -1174,7 +1182,10 @@ def api_atividades_recentes():
     ultimos_produtos = Variante.query.filter_by(ativo=True).order_by(Variante.created_at.desc()).limit(50).all()
     for v in ultimos_produtos:
         nome_prod = "Produto"
-        prod = Produto.query.get(v.produto_id)
+        prod = db.session.get(
+        Produto,
+        v.produto_id
+)
         if prod:
             nome_prod = f"{prod.linha} {prod.formato}"
         
