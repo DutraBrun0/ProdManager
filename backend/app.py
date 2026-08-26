@@ -900,6 +900,161 @@ def excluir_variante(id):
         return jsonify({"status": "erro", "mensagem": str(e)}), 500
         
 
+@app.route("/api/dashboard/resumo")
+@api_login_required
+def api_dashboard_resumo():
+    perfil = session.get("user_perfil")
+    usuario_id = session["user_id"]
+
+    if perfil == "cliente":
+        pedidos = Pedido.query.filter_by(
+            cliente_id=usuario_id
+        ).all()
+
+        em_andamento = sum(
+            pedido.status not in {"entregue", "finalizado"}
+            for pedido in pedidos
+        )
+
+        finalizados = sum(
+            pedido.status in {"entregue", "finalizado"}
+            for pedido in pedidos
+        )
+
+        total_gasto = sum(
+            float(pedido.total or 0)
+            for pedido in pedidos
+        )
+
+        cards = [
+            {
+                "titulo": "Meus pedidos",
+                "valor": len(pedidos),
+                "tipo": "numero"
+            },
+            {
+                "titulo": "Em andamento",
+                "valor": em_andamento,
+                "tipo": "numero"
+            },
+            {
+                "titulo": "Finalizados",
+                "valor": finalizados,
+                "tipo": "numero"
+            },
+            {
+                "titulo": "Total em pedidos",
+                "valor": total_gasto,
+                "tipo": "moeda"
+            }
+        ]
+
+    elif perfil == "estoque":
+        variantes = Variante.query.filter_by(
+            ativo=True
+        ).all()
+
+        estoques = [
+            variante.estoque
+            for variante in variantes
+            if variante.estoque
+        ]
+
+        total_unidades = sum(
+            estoque.quantidade
+            for estoque in estoques
+        )
+
+        estoque_baixo = sum(
+            estoque.quantidade <= estoque.minimo
+            for estoque in estoques
+        )
+
+        sem_estoque = sum(
+            estoque.quantidade == 0
+            for estoque in estoques
+        )
+
+        cards = [
+            {
+                "titulo": "Variantes ativas",
+                "valor": len(variantes),
+                "tipo": "numero"
+            },
+            {
+                "titulo": "Unidades em estoque",
+                "valor": total_unidades,
+                "tipo": "numero"
+            },
+            {
+                "titulo": "Estoque baixo",
+                "valor": estoque_baixo,
+                "tipo": "numero"
+            },
+            {
+                "titulo": "Sem estoque",
+                "valor": sem_estoque,
+                "tipo": "numero"
+            }
+        ]
+
+    elif perfil in {"admin", "comercial"}:
+        pedidos = Pedido.query.all()
+
+        total_vendido = sum(
+            float(pedido.total or 0)
+            for pedido in pedidos
+        )
+
+        total_clientes = Usuario.query.filter_by(
+            perfil="cliente",
+            ativo=True
+        ).count()
+
+        variantes = Variante.query.filter_by(
+            ativo=True
+        ).all()
+
+        estoque_baixo = sum(
+            variante.estoque is not None
+            and variante.estoque.quantidade <= variante.estoque.minimo
+            for variante in variantes
+        )
+
+        cards = [
+            {
+                "titulo": "Faturamento total",
+                "valor": total_vendido,
+                "tipo": "moeda"
+            },
+            {
+                "titulo": "Pedidos",
+                "valor": len(pedidos),
+                "tipo": "numero"
+            },
+            {
+                "titulo": "Clientes ativos",
+                "valor": total_clientes,
+                "tipo": "numero"
+            },
+            {
+                "titulo": "Estoque baixo",
+                "valor": estoque_baixo,
+                "tipo": "numero"
+            }
+        ]
+
+    else:
+        return jsonify({
+            "status": "erro",
+            "mensagem": "Perfil inválido"
+        }), 403
+
+    return jsonify({
+        "perfil": perfil,
+        "cards": cards
+    })
+
 @app.route("/api/atividades_recentes")
 @api_login_required
 @api_roles_required("admin", "comercial", "estoque")

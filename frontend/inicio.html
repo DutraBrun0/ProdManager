@@ -7,6 +7,43 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='menu.css') }}">
     <style>
         /* CSS Extra para os ícones e botão ver mais */
+        .resumo-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+.resumo-card {
+    padding: 20px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #f8fafc;
+}
+
+.resumo-titulo {
+    display: block;
+    margin-bottom: 8px;
+    color: #64748b;
+    font-size: 0.85rem;
+}
+
+.resumo-valor {
+    color: #0f172a;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+@media (max-width: 800px) {
+    .resumo-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .resumo-grid {
+        grid-template-columns: 1fr;
+    }
+}
         .feed-item {
             display: flex;
             align-items: center;
@@ -75,8 +112,15 @@
     {{ perfil|capitalize }}
 </span>
     </section>
+    <section>
+    <h2>Visão geral</h2>
 
-    <div class="dashboard-columns">
+    <div id="resumo-cards" class="resumo-grid">
+        <p>Carregando informações...</p>
+    </div>
+</section>
+
+    <div class="dashboard-columns" id="dashboard-operacional">
         <section>
             <h2>Status do Estoque</h2>
             <div id="stock-status-list">
@@ -109,6 +153,64 @@ document.addEventListener('DOMContentLoaded', async () => {
             return { __error: true, message: err.message || String(err) };
         }
     }
+    // Resumo do dashboard
+const resumoContainer =
+    document.getElementById("resumo-cards");
+
+const resumo = await safeFetchJson(
+    "/api/dashboard/resumo"
+);
+
+resumoContainer.innerHTML = "";
+
+if (
+    resumo &&
+    !resumo.__error &&
+    Array.isArray(resumo.cards)
+) {
+    resumo.cards.forEach(card => {
+        let valorFormatado = card.valor;
+
+        if (card.tipo === "moeda") {
+            valorFormatado = new Intl.NumberFormat(
+                "pt-BR",
+                {
+                    style: "currency",
+                    currency: "BRL"
+                }
+            ).format(Number(card.valor || 0));
+        }
+
+        const elemento = document.createElement("div");
+        elemento.className = "resumo-card";
+
+        elemento.innerHTML = `
+            <span class="resumo-titulo">
+                ${card.titulo}
+            </span>
+
+            <strong class="resumo-valor">
+                ${valorFormatado}
+            </strong>
+        `;
+
+        resumoContainer.appendChild(elemento);
+    });
+
+} else {
+    resumoContainer.innerHTML =
+        "<p>Não foi possível carregar o resumo.</p>";
+
+        const perfilAtual = "{{ perfil }}";
+
+if (perfilAtual === "cliente") {
+    document.getElementById(
+        "dashboard-operacional"
+    ).style.display = "none";
+
+    return;
+}
+}
 
     // ==========================================
     // 1) Carregar Estoque (Lógica Original)
