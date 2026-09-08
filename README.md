@@ -57,7 +57,7 @@ As permissões são verificadas no backend. Portanto, esconder uma opção da in
 ## Estrutura do projeto
 
 ```text
-TCC-1/
+ProdManager/
 ├── backend/
 │   ├── app.py
 │   ├── create_admin.py
@@ -133,7 +133,7 @@ Antes de começar, instale:
 
 ```bash
 git clone https://github.com/DutraBrun0/ProdManager.git
-cd TCC
+cd ProdManager
 ```
 
 ### 2. Criar o ambiente virtual
